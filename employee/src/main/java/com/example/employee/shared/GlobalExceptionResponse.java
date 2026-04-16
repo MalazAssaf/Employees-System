@@ -1,0 +1,68 @@
+
+package com.example.employee.shared;
+
+import java.util.List;
+
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+
+@ControllerAdvice
+public class GlobalExceptionResponse {
+
+  @ExceptionHandler(ResourceNotFoundException.class)
+  public ResponseEntity<GlobalResponse<Void>> handleNoResourceFoundException(ResourceNotFoundException ex) {
+
+    var errors = List.of(new GlobalResponse.ErrorItem(ex.getMessage()));
+
+    return new ResponseEntity<>(new GlobalResponse<>(errors), ex.getStatus());
+  }
+
+  @ExceptionHandler(MethodArgumentNotValidException.class)
+  public ResponseEntity<GlobalResponse<?>> handleValidationException(MethodArgumentNotValidException ex) {
+
+    var errors = new java.util.ArrayList<>();
+
+    errors.addAll(
+        ex.getBindingResult().getFieldErrors().stream()
+            .map(err -> new GlobalResponse.ErrorItem(err.getDefaultMessage()))
+            .toList());
+
+    errors.addAll(
+        ex.getBindingResult().getGlobalErrors().stream()
+            .map(err -> new GlobalResponse.ErrorItem(err.getDefaultMessage()))
+            .toList());
+
+    return new ResponseEntity<>(new GlobalResponse<>(errors), HttpStatus.BAD_REQUEST);
+  }
+
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  public ResponseEntity<GlobalResponse<?>> handleEnumError(HttpMessageNotReadableException ex) {
+
+    String message = ex.getMessage();
+
+    if (ex.getMessage().contains("RequestStatus")) {
+      message = "status must be one of [PENDING, ACCEPTED, REJECTED]";
+    }
+
+    var errors = List.of(new GlobalResponse.ErrorItem(message));
+
+    return new ResponseEntity<>(new GlobalResponse<>(errors),
+        HttpStatus.BAD_REQUEST);
+  }
+
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  public ResponseEntity<GlobalResponse<?>> handleDataIntegrity(DataIntegrityViolationException ex) {
+
+    var errors = List.of(new GlobalResponse.ErrorItem(
+        "Database constraint violation (duplicate or invalid reference)"));
+    ;
+
+    return new ResponseEntity<>(new GlobalResponse<>(errors),
+        HttpStatus.CONFLICT);
+  }
+}
