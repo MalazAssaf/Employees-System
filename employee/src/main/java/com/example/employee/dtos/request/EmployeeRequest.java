@@ -19,7 +19,8 @@ import lombok.Setter;
 public class EmployeeRequest {
   @NotBlank(message = "Name is required")
   private String name;
-  @Email(regexp = "^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$", message = "Email is invalid")
+  @Email(regexp = "^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$", message = "Email is invalid. PLease enter Valid Email")
+  @NotBlank
   private String email;
   @Pattern(regexp = "^0\\d{9}$", message = "Mobile must start with 0 and be 10 digits")
   @NotBlank(message = "Mobile phone is required")

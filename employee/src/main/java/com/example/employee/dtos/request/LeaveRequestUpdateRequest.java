@@ -9,11 +9,11 @@ import jakarta.validation.constraints.Size;
 
 public record LeaveRequestUpdateRequest(
 
-    @FutureOrPresent @NotNull(message = "Start date cannot be null") LocalDate startDate,
+        @FutureOrPresent @NotNull(message = "Start date cannot be null") LocalDate startDate,
 
-    @FutureOrPresent @NotNull(message = "End date cannot be null") LocalDate endDate,
+        @FutureOrPresent @NotNull(message = "End date cannot be null") LocalDate endDate,
 
-    @Size(min = 3, max = 100, message = "Reason must be between 2 and 100 chars") @NotBlank(message = "Reason cannot be empty") String reason
+        @Size(min = 3, max = 100, message = "Reason must be between 2 and 100 chars") @NotBlank(message = "Reason cannot be empty") String reason
 
 ) {
 

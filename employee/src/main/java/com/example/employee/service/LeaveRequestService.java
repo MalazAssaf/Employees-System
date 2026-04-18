@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
+import com.example.employee.dtos.request.LeaveRequestPatchRequest;
 import com.example.employee.dtos.request.LeaveRequestRequest;
 import com.example.employee.dtos.request.LeaveRequestUpdateRequest;
 import com.example.employee.dtos.response.EmployeeLeaveRequestsResponse;
@@ -14,6 +15,7 @@ import com.example.employee.entity.Employee;
 import com.example.employee.entity.LeaveRequest;
 import com.example.employee.repo.EmployeeRepo;
 import com.example.employee.repo.LeaveRequestRepo;
+import com.example.employee.shared.BadRequestException;
 import com.example.employee.shared.GlobalResponse;
 import com.example.employee.shared.ResourceNotFoundException;
 
@@ -105,6 +107,33 @@ public class LeaveRequestService {
     leaveRequest.setStartDate(req.startDate());
     leaveRequest.setEndDate(req.endDate());
     leaveRequest.setReason(req.reason());
+
+    return new GlobalResponse<>(toDto(leaveRequestRepo.save(leaveRequest)));
+  }
+
+  public GlobalResponse<LeaveRequestWithEmployeeResponse> patch(UUID id, LeaveRequestPatchRequest req) {
+
+    LeaveRequest leaveRequest = leaveRequestRepo.findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("LeaveRequest with " + id + " Not found!"));
+
+    if (req.startDate() != null) {
+      leaveRequest.setStartDate(req.startDate());
+    }
+
+    if (req.endDate() != null) {
+      leaveRequest.setEndDate(req.endDate());
+    }
+
+    if (req.reason() != null) {
+      leaveRequest.setReason(req.reason());
+    }
+
+    // ✅ business validation
+    if (leaveRequest.getStartDate() != null && leaveRequest.getEndDate() != null) {
+      if (!leaveRequest.getEndDate().isAfter(leaveRequest.getStartDate())) {
+        throw new BadRequestException("End date must be after start date");
+      }
+    }
 
     return new GlobalResponse<>(toDto(leaveRequestRepo.save(leaveRequest)));
   }

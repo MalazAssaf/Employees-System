@@ -49,8 +49,8 @@ public class EmployeeController {
   }
 
   @PutMapping("/{id}")
-  public GlobalResponse<EmployeeResponse> update(@PathVariable UUID id, @Valid @RequestBody EmployeeRequest request) {
-    return service.update(id, request);
+  public GlobalResponse<EmployeeResponse> update(@PathVariable UUID id, @Valid @RequestBody EmployeeRequest req) {
+    return service.update(id, req);
   }
 
 }

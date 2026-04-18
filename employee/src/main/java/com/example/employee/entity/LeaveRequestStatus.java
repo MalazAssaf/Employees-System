@@ -1,6 +1,6 @@
 package com.example.employee.entity;
 
-public enum RequestStatus {
+public enum LeaveRequestStatus {
   PENDING,
   ACCEPTED,
   REJECTED

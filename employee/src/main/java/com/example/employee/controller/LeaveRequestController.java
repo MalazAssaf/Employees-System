@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.employee.dtos.request.LeaveRequestPatchRequest;
 import com.example.employee.dtos.request.LeaveRequestRequest;
 import com.example.employee.dtos.request.LeaveRequestUpdateRequest;
 import com.example.employee.dtos.response.EmployeeLeaveRequestsResponse;
@@ -20,6 +21,7 @@ import java.util.UUID;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 
@@ -56,8 +58,14 @@ public class LeaveRequestController {
 
   @PutMapping("/{id}")
   public GlobalResponse<LeaveRequestWithEmployeeResponse> update(@PathVariable UUID id,
-      @Valid @RequestBody LeaveRequestUpdateRequest leaveRequestUpdateRequest) {
-    return leaveRequestService.update(id, leaveRequestUpdateRequest);
+      @Valid @RequestBody LeaveRequestUpdateRequest req) {
+    return leaveRequestService.update(id, req);
+  }
+
+  @PatchMapping("/{id}")
+  public GlobalResponse<LeaveRequestWithEmployeeResponse> patch(@PathVariable UUID id,
+      @RequestBody LeaveRequestPatchRequest req) {
+    return leaveRequestService.patch(id, req);
   }
 
 }

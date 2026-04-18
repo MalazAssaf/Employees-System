@@ -3,8 +3,6 @@ package com.example.employee.entity;
 import java.time.LocalDate;
 import java.util.UUID;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -36,6 +34,5 @@ public class Employee {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "department_id")
-  @JsonProperty("departmentId")
   private Department department;
 }

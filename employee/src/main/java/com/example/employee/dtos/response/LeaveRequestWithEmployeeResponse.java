@@ -2,14 +2,14 @@ package com.example.employee.dtos.response;
 
 import java.time.LocalDate;
 import java.util.UUID;
-import com.example.employee.entity.RequestStatus;
+import com.example.employee.entity.LeaveRequestStatus;
 
 public record LeaveRequestWithEmployeeResponse(
-    UUID id,
-    LocalDate startDate,
-    LocalDate endDate,
-    String reason,
-    RequestStatus status,
-    UUID employeeId) {
+        UUID id,
+        LocalDate startDate,
+        LocalDate endDate,
+        String reason,
+        LeaveRequestStatus status,
+        UUID employeeId) {
 
 }
