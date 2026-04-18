@@ -3,7 +3,9 @@ package com.example.employee.dtos.request;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import com.example.employee.entity.LeaveRequestStatus;
 import com.example.employee.validators.ValidDateRange;
+import com.example.employee.validators.ValidEnum;
 
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
@@ -30,6 +32,11 @@ public class LeaveRequestRequest {
   @NotBlank(message = "reason is required")
   @Size(min = 3, max = 100, message = "Reason must be between 2 and 100 chars")
   private String reason;
+
+  @NotBlank(message = "status is required")
+  @ValidEnum(LeaveRequestStatus.class)
+  private String status;
+
   @NotNull(message = "employeeId Id is required")
   private UUID employeeId;
 }

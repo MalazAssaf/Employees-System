@@ -13,6 +13,7 @@ import com.example.employee.dtos.response.LeaveRequestResponse;
 import com.example.employee.dtos.response.LeaveRequestWithEmployeeResponse;
 import com.example.employee.entity.Employee;
 import com.example.employee.entity.LeaveRequest;
+import com.example.employee.entity.LeaveRequestStatus;
 import com.example.employee.repo.EmployeeRepo;
 import com.example.employee.repo.LeaveRequestRepo;
 import com.example.employee.shared.BadRequestException;
@@ -85,6 +86,7 @@ public class LeaveRequestService {
     leaveRequest.setStartDate(req.getStartDate());
     leaveRequest.setEndDate(req.getEndDate());
     leaveRequest.setReason(req.getReason());
+    leaveRequest.setStatus(LeaveRequestStatus.valueOf(req.getStatus().toUpperCase()));
     leaveRequest.setEmployee(employee);
 
     return new GlobalResponse<>(toDto(leaveRequestRepo.save(leaveRequest)));

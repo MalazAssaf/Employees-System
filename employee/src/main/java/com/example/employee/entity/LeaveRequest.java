@@ -32,7 +32,7 @@ public class LeaveRequest {
   private String reason;
 
   @Enumerated(EnumType.STRING)
-  private LeaveRequestStatus status = LeaveRequestStatus.PENDING;
+  private LeaveRequestStatus status;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "employee_id")

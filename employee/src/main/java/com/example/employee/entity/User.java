@@ -1,6 +1,7 @@
 package com.example.employee.entity;
 
 import java.util.UUID;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -30,8 +31,9 @@ public class User {
   @Column(unique = true)
   private String username;
   private String password;
+
   @Enumerated(EnumType.STRING)
-  private UserRole role = UserRole.USER;
+  private UserRole role;
 
   @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "employee_id", unique = true)
