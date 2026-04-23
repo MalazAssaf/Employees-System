@@ -29,4 +29,6 @@ public class EmployeeRequest {
   private LocalDate hireDate;
   @NotNull(message = "Department Id is required")
   private UUID departmentId;
+
+  private UUID managerId;
 }

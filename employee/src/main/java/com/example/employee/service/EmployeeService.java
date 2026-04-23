@@ -2,7 +2,6 @@ package com.example.employee.service;
 
 import java.util.List;
 import java.util.UUID;
-
 import org.springframework.stereotype.Service;
 
 import com.example.employee.dtos.request.EmployeeRequest;
@@ -20,10 +19,18 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class EmployeeService {
 
-  private final EmployeeRepo repo;
+  private final EmployeeRepo employeeRepo;
   private final DepartmentRepo departmentRepo;
 
   private EmployeeResponse toDto(Employee employee) {
+    UUID managerId = null;
+    String managerName = null;
+
+    if (employee.getManager() != null) {
+      managerId = employee.getManager().getId();
+      managerName = employee.getManager().getName();
+    }
+
     return new EmployeeResponse(
         employee.getId(),
         employee.getName(),
@@ -31,17 +38,19 @@ public class EmployeeService {
         employee.getPhoneNumber(),
         employee.getHireDate(),
         employee.getDepartment().getId(),
-        employee.getDepartment().getName());
+        employee.getDepartment().getName(),
+        managerId,
+        managerName);
   }
 
   public GlobalResponse<EmployeeResponse> getById(UUID id) {
-    Employee employee = repo.findById(id)
+    Employee employee = employeeRepo.findById(id)
         .orElseThrow(() -> CustomResponseException.resourceNotFoundException("Employee with id " + id + " not found!"));
     return new GlobalResponse<>(toDto(employee));
   }
 
   public GlobalResponse<List<EmployeeResponse>> getAll() {
-    List<EmployeeResponse> employees = repo.findAll().stream().map(this::toDto).toList();
+    List<EmployeeResponse> employees = employeeRepo.findAll().stream().map(this::toDto).toList();
     return new GlobalResponse<>(employees);
   }
 
@@ -56,18 +65,24 @@ public class EmployeeService {
     employee.setHireDate(req.getHireDate());
     employee.setDepartment(department);
 
-    return new GlobalResponse<>(toDto(repo.save(employee)));
+    if (req.getManagerId() != null) {
+      Employee manager = employeeRepo.findById(req.getManagerId()).orElseThrow(() -> CustomResponseException
+          .resourceNotFoundException("Manager with id " + req.getManagerId() + " Not found!"));
+      employee.setManager(manager);
+    }
+
+    return new GlobalResponse<>(toDto(employeeRepo.save(employee)));
   }
 
   public void delete(UUID id) {
-    if (!repo.existsById(id)) {
+    if (!employeeRepo.existsById(id)) {
       throw CustomResponseException.resourceNotFoundException("Employee with " + id + " Not found!");
     }
-    repo.deleteById(id);
+    employeeRepo.deleteById(id);
   }
 
   public GlobalResponse<EmployeeResponse> update(UUID id, EmployeeRequest req) {
-    Employee employee = repo.findById(id)
+    Employee employee = employeeRepo.findById(id)
         .orElseThrow(() -> CustomResponseException.resourceNotFoundException(
             "Employee with id " + id + " not found!"));
 
@@ -81,6 +96,23 @@ public class EmployeeService {
     employee.setHireDate(req.getHireDate());
     employee.setDepartment(department);
 
-    return new GlobalResponse<>(toDto(repo.save(employee)));
+    if (req.getManagerId() != null) {
+      if (employee.getId().equals(req.getManagerId())) {
+        throw CustomResponseException.badRequestException("Invalid Action: Employee cannot be their own manager!");
+      }
+
+      Employee manager = employeeRepo.findById(req.getManagerId())
+          .orElseThrow(() -> CustomResponseException
+              .resourceNotFoundException("Manager with id " + req.getManagerId() + " Not found!"));
+
+      employee.setManager(manager);
+    }
+
+    else {
+      employee.setManager(null);
+    }
+
+    return new GlobalResponse<>(toDto(employeeRepo.save(employee)));
   }
+
 }
