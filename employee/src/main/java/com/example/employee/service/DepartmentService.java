@@ -12,8 +12,8 @@ import com.example.employee.dtos.response.EmployeeInDepartmentResponse;
 import com.example.employee.entity.Department;
 import com.example.employee.repo.DepartmentRepo;
 import com.example.employee.repo.EmployeeRepo;
+import com.example.employee.shared.CustomResponseException;
 import com.example.employee.shared.GlobalResponse;
-import com.example.employee.shared.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -30,7 +30,7 @@ public class DepartmentService {
 
   public GlobalResponse<DepartmentResponse> getById(UUID id) {
     Department department = departmentRepo.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Department with " + id + " Not found!"));
+        .orElseThrow(() -> CustomResponseException.resourceNotFoundException("Department with " + id + " Not found!"));
     return new GlobalResponse<>(toDto(department));
   }
 
@@ -47,14 +47,14 @@ public class DepartmentService {
 
   public void delete(UUID id) {
     if (!departmentRepo.existsById(id)) {
-      throw new ResourceNotFoundException("Department with " + id + " Not found!");
+      throw CustomResponseException.resourceNotFoundException("Department with " + id + " Not found!");
     }
     departmentRepo.deleteById(id);
   }
 
   public GlobalResponse<DepartmentResponse> update(UUID id, DepartmentRequest req) {
     Department department = departmentRepo.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Department with " + id + " Not found!"));
+        .orElseThrow(() -> CustomResponseException.resourceNotFoundException("Department with " + id + " Not found!"));
     department.setName(req.getName());
     return new GlobalResponse<>(toDto(departmentRepo.save(department)));
   }
@@ -62,7 +62,7 @@ public class DepartmentService {
   public GlobalResponse<DepartmentWithEmployeesResponse> getDepartmentWithEmployees(UUID id) {
 
     Department department = departmentRepo.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException(
+        .orElseThrow(() -> CustomResponseException.resourceNotFoundException(
             "Department with " + id + " Not found!"));
 
     List<EmployeeInDepartmentResponse> employees = employeeRepo

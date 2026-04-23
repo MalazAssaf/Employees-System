@@ -11,8 +11,8 @@ import com.example.employee.entity.Department;
 import com.example.employee.entity.Employee;
 import com.example.employee.repo.DepartmentRepo;
 import com.example.employee.repo.EmployeeRepo;
+import com.example.employee.shared.CustomResponseException;
 import com.example.employee.shared.GlobalResponse;
-import com.example.employee.shared.ResourceNotFoundException;
 
 import lombok.RequiredArgsConstructor;
 
@@ -36,7 +36,7 @@ public class EmployeeService {
 
   public GlobalResponse<EmployeeResponse> getById(UUID id) {
     Employee employee = repo.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Employee with id " + id + " not found!"));
+        .orElseThrow(() -> CustomResponseException.resourceNotFoundException("Employee with id " + id + " not found!"));
     return new GlobalResponse<>(toDto(employee));
   }
 
@@ -47,7 +47,8 @@ public class EmployeeService {
 
   public GlobalResponse<EmployeeResponse> create(EmployeeRequest req) {
     Department department = departmentRepo.findById(req.getDepartmentId())
-        .orElseThrow(() -> new ResourceNotFoundException("Department with " + req.getDepartmentId() + " Not found!"));
+        .orElseThrow(() -> CustomResponseException
+            .resourceNotFoundException("Department with " + req.getDepartmentId() + " Not found!"));
     Employee employee = new Employee();
     employee.setName(req.getName());
     employee.setEmail(req.getEmail());
@@ -60,18 +61,18 @@ public class EmployeeService {
 
   public void delete(UUID id) {
     if (!repo.existsById(id)) {
-      throw new ResourceNotFoundException("Employee with " + id + " Not found!");
+      throw CustomResponseException.resourceNotFoundException("Employee with " + id + " Not found!");
     }
     repo.deleteById(id);
   }
 
   public GlobalResponse<EmployeeResponse> update(UUID id, EmployeeRequest req) {
     Employee employee = repo.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException(
+        .orElseThrow(() -> CustomResponseException.resourceNotFoundException(
             "Employee with id " + id + " not found!"));
 
     Department department = departmentRepo.findById(req.getDepartmentId())
-        .orElseThrow(() -> new ResourceNotFoundException(
+        .orElseThrow(() -> CustomResponseException.resourceNotFoundException(
             "Department with " + req.getDepartmentId() + " Not found!"));
 
     employee.setName(req.getName());

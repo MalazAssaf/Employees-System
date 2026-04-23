@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,16 +44,19 @@ public class DepartmentController {
     return service.getDepartmentWithEmployees(id);
   }
 
+  @PreAuthorize("hasAuthority('ADMIN')")
   @PostMapping
   public GlobalResponse<DepartmentResponse> create(@Valid @RequestBody DepartmentRequest req) {
     return service.create(req);
   }
 
+  @PreAuthorize("hasAuthority('ADMIN')")
   @DeleteMapping("/{id}")
   public void deleteById(@PathVariable UUID id) {
     service.delete(id);
   }
 
+  @PreAuthorize("hasAuthority('ADMIN')")
   @PutMapping("/{id}")
   public GlobalResponse<DepartmentResponse> update(@PathVariable UUID id,
       @Valid @RequestBody DepartmentRequest request) {

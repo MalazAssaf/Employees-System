@@ -16,9 +16,8 @@ import com.example.employee.entity.LeaveRequest;
 import com.example.employee.entity.LeaveRequestStatus;
 import com.example.employee.repo.EmployeeRepo;
 import com.example.employee.repo.LeaveRequestRepo;
-import com.example.employee.shared.BadRequestException;
+import com.example.employee.shared.CustomResponseException;
 import com.example.employee.shared.GlobalResponse;
-import com.example.employee.shared.ResourceNotFoundException;
 
 import lombok.RequiredArgsConstructor;
 
@@ -41,7 +40,8 @@ public class LeaveRequestService {
   public GlobalResponse<LeaveRequestWithEmployeeResponse> getById(UUID id) {
 
     LeaveRequest leaveRequest = leaveRequestRepo.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Leave Request with " + id + " not found!"));
+        .orElseThrow(
+            () -> CustomResponseException.resourceNotFoundException("Leave Request with " + id + " not found!"));
 
     return new GlobalResponse<>(toDto(leaveRequest));
   }
@@ -55,7 +55,7 @@ public class LeaveRequestService {
   public GlobalResponse<EmployeeLeaveRequestsResponse> getRequestsByEmployee(UUID id) {
 
     Employee employee = employeeRepo.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException(
+        .orElseThrow(() -> CustomResponseException.resourceNotFoundException(
             "Employee with " + id + " Not found!"));
 
     List<LeaveRequestResponse> requests = leaveRequestRepo
@@ -80,7 +80,8 @@ public class LeaveRequestService {
   public GlobalResponse<LeaveRequestWithEmployeeResponse> create(LeaveRequestRequest req) {
 
     Employee employee = employeeRepo.findById(req.getEmployeeId())
-        .orElseThrow(() -> new ResourceNotFoundException("Employee with " + req.getEmployeeId() + " Not found!"));
+        .orElseThrow(() -> CustomResponseException
+            .resourceNotFoundException("Employee with " + req.getEmployeeId() + " Not found!"));
 
     LeaveRequest leaveRequest = new LeaveRequest();
     leaveRequest.setStartDate(req.getStartDate());
@@ -95,7 +96,7 @@ public class LeaveRequestService {
   public void delete(UUID id) {
 
     if (!leaveRequestRepo.existsById(id)) {
-      throw new ResourceNotFoundException("leaveRequestRepo with " + id + " Not found!");
+      throw CustomResponseException.resourceNotFoundException("leaveRequestRepo with " + id + " Not found!");
     }
 
     leaveRequestRepo.deleteById(id);
@@ -104,7 +105,8 @@ public class LeaveRequestService {
   public GlobalResponse<LeaveRequestWithEmployeeResponse> update(UUID id, LeaveRequestUpdateRequest req) {
 
     LeaveRequest leaveRequest = leaveRequestRepo.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("LeaveRequest with " + id + " Not found!"));
+        .orElseThrow(
+            () -> CustomResponseException.resourceNotFoundException("LeaveRequest with " + id + " Not found!"));
 
     leaveRequest.setStartDate(req.startDate());
     leaveRequest.setEndDate(req.endDate());
@@ -116,7 +118,8 @@ public class LeaveRequestService {
   public GlobalResponse<LeaveRequestWithEmployeeResponse> patch(UUID id, LeaveRequestPatchRequest req) {
 
     LeaveRequest leaveRequest = leaveRequestRepo.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("LeaveRequest with " + id + " Not found!"));
+        .orElseThrow(
+            () -> CustomResponseException.resourceNotFoundException("LeaveRequest with " + id + " Not found!"));
 
     if (req.startDate() != null) {
       leaveRequest.setStartDate(req.startDate());
@@ -130,10 +133,9 @@ public class LeaveRequestService {
       leaveRequest.setReason(req.reason());
     }
 
-    // ✅ business validation
     if (leaveRequest.getStartDate() != null && leaveRequest.getEndDate() != null) {
       if (!leaveRequest.getEndDate().isAfter(leaveRequest.getStartDate())) {
-        throw new BadRequestException("End date must be after start date");
+        throw CustomResponseException.badRequestException("End date must be after start date");
       }
     }
 
