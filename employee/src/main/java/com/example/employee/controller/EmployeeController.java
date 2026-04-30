@@ -29,7 +29,7 @@ public class EmployeeController {
   private final EmployeeService service;
 
   @GetMapping("/{id}")
-  @PreAuthorize("hasAuthority('ADMIN') or #id ==authentication.principal.employee?.id or @SecurityUtils.isManager(#id)")
+  @PreAuthorize("hasAuthority('ADMIN') or #id==authentication.principal.employee?.id or @securityUtils.isManager(#id)")
   public GlobalResponse<EmployeeResponse> getById(@PathVariable UUID id) {
     return service.getById(id);
   }

@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.employee.dtos.request.LeaveRequestPatchRequest;
 import com.example.employee.dtos.request.LeaveRequestRequest;
+import com.example.employee.dtos.request.LeaveRequestStatusUpdateRequest;
 import com.example.employee.dtos.request.LeaveRequestUpdateRequest;
 import com.example.employee.dtos.response.EmployeeLeaveRequestsResponse;
 import com.example.employee.dtos.response.LeaveRequestWithEmployeeResponse;
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -66,6 +68,13 @@ public class LeaveRequestController {
   public GlobalResponse<LeaveRequestWithEmployeeResponse> patch(@PathVariable UUID id,
       @RequestBody LeaveRequestPatchRequest req) {
     return leaveRequestService.patch(id, req);
+  }
+
+  @PatchMapping("/{id}/status")
+  @PreAuthorize("@securityUtils.leaveRequestAccessedByManager(#id)")
+  public GlobalResponse<LeaveRequestWithEmployeeResponse> updateLeaveRequestStatus(@PathVariable UUID id,
+      @RequestBody @Valid LeaveRequestStatusUpdateRequest status) {
+    return leaveRequestService.updateLeaveRequestStatus(id, status);
   }
 
 }

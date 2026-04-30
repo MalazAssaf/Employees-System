@@ -12,7 +12,6 @@ import com.example.employee.repo.DepartmentRepo;
 import com.example.employee.repo.EmployeeRepo;
 import com.example.employee.shared.CustomResponseException;
 import com.example.employee.shared.GlobalResponse;
-
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -44,8 +43,8 @@ public class EmployeeService {
   }
 
   public GlobalResponse<EmployeeResponse> getById(UUID id) {
-    Employee employee = employeeRepo.findById(id)
-        .orElseThrow(() -> CustomResponseException.resourceNotFoundException("Employee with id " + id + " not found!"));
+    Employee employee = employeeRepo.findById(id).orElseThrow(() -> CustomResponseException
+        .resourceNotFoundException("Employee with id: " + id + " not found!"));
     return new GlobalResponse<>(toDto(employee));
   }
 
@@ -82,9 +81,8 @@ public class EmployeeService {
   }
 
   public GlobalResponse<EmployeeResponse> update(UUID id, EmployeeRequest req) {
-    Employee employee = employeeRepo.findById(id)
-        .orElseThrow(() -> CustomResponseException.resourceNotFoundException(
-            "Employee with id " + id + " not found!"));
+    Employee employee = employeeRepo.findById(id).orElseThrow(() -> CustomResponseException
+        .resourceNotFoundException("Employee with id: " + id + " not found!"));
 
     Department department = departmentRepo.findById(req.getDepartmentId())
         .orElseThrow(() -> CustomResponseException.resourceNotFoundException(

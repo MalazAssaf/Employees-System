@@ -13,7 +13,7 @@ public class DateRangeValidator implements ConstraintValidator<ValidDateRange, L
       return true;
     }
 
-    return value.getEndDate().isAfter(value.getStartDate());
+    return !(value.getEndDate().isBefore(value.getStartDate()));
   }
 
 }

@@ -22,4 +22,8 @@ public class CustomResponseException extends RuntimeException {
   public static CustomResponseException badRequestException(String message) {
     return new CustomResponseException(HttpStatus.BAD_REQUEST, message);
   }
+
+  public static CustomResponseException forbiddenException(String message) {
+    return new CustomResponseException(HttpStatus.FORBIDDEN, message);
+  }
 }
