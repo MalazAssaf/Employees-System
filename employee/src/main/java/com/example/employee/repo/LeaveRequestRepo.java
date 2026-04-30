@@ -17,4 +17,6 @@ public interface LeaveRequestRepo extends JpaRepository<LeaveRequest, UUID> {
 
   List<LeaveRequest> findAllByEmployeeId(UUID employeeId);
 
+  boolean existsByEmployeeId(UUID id);
+
 }

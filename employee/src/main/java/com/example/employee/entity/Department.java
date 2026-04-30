@@ -6,6 +6,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -23,4 +25,8 @@ public class Department {
   private UUID id;
   @Column(name = "name", unique = true)
   private String name;
+
+  @OneToOne
+  @JoinColumn(name = "manager_id")
+  private Employee manager;
 }

@@ -3,13 +3,18 @@ package com.example.employee.service;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.employee.dtos.request.EmployeeRequest;
+import com.example.employee.dtos.response.EmployeeInDepartmentResponse;
 import com.example.employee.dtos.response.EmployeeResponse;
+import com.example.employee.dtos.response.EmployeeUnderManagerResponse;
 import com.example.employee.entity.Department;
 import com.example.employee.entity.Employee;
 import com.example.employee.repo.DepartmentRepo;
 import com.example.employee.repo.EmployeeRepo;
+import com.example.employee.repo.LeaveRequestRepo;
+import com.example.employee.repo.UserRepo;
 import com.example.employee.shared.CustomResponseException;
 import com.example.employee.shared.GlobalResponse;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +25,8 @@ public class EmployeeService {
 
   private final EmployeeRepo employeeRepo;
   private final DepartmentRepo departmentRepo;
+  private final LeaveRequestRepo leaveRequestRepo;
+  private final UserRepo userRepo;
 
   private EmployeeResponse toDto(Employee employee) {
     UUID managerId = null;
@@ -73,11 +80,35 @@ public class EmployeeService {
     return new GlobalResponse<>(toDto(employeeRepo.save(employee)));
   }
 
-  public void delete(UUID id) {
+  @Transactional
+  public GlobalResponse<String> delete(UUID id) {
+
     if (!employeeRepo.existsById(id)) {
-      throw CustomResponseException.resourceNotFoundException("Employee with " + id + " Not found!");
+      throw CustomResponseException.resourceNotFoundException("Employee with id " + id + " not found!");
     }
+
+    if (departmentRepo.existsByManagerId(id)) {
+      throw CustomResponseException.badRequestException(
+          "Cannot delete employee: They are currently managing a department. Please remove them from department management first.");
+    }
+
+    if (employeeRepo.existsByManagerId(id)) {
+      throw CustomResponseException.badRequestException(
+          "Cannot delete employee: They are managing other employees. Please reassign their team to another manager first.");
+    }
+
+    if (leaveRequestRepo.existsByEmployeeId(id)) {
+      throw CustomResponseException.badRequestException(
+          "Cannot delete employee: They have existing leave requests. Deleting them would corrupt historical HR data.");
+    }
+
+    // Delete the user account related to it
+    userRepo.deleteByEmployeeId(id);
+
     employeeRepo.deleteById(id);
+
+    return new GlobalResponse<>(
+        "Employee with id " + id + " and their associated user account have been successfully deleted");
   }
 
   public GlobalResponse<EmployeeResponse> update(UUID id, EmployeeRequest req) {
@@ -111,6 +142,38 @@ public class EmployeeService {
     }
 
     return new GlobalResponse<>(toDto(employeeRepo.save(employee)));
+  }
+
+  public GlobalResponse<EmployeeUnderManagerResponse> getAllEmployeesUnderManager(UUID managerId) {
+
+    Employee manager = employeeRepo.findById(managerId)
+        .orElseThrow(
+            () -> CustomResponseException.resourceNotFoundException("Manager with id " + managerId + " not found!"));
+
+    if (!employeeRepo.existsByManagerId(manager.getId())) {
+      throw CustomResponseException
+          .badRequestException("This employee does not manage any team members");
+    }
+
+    List<EmployeeInDepartmentResponse> employees = employeeRepo.findAllByManagerId(managerId)
+        .stream()
+        .map(employee -> new EmployeeInDepartmentResponse(employee.getId(),
+            employee.getName(), employee.getEmail()))
+        .toList();
+
+    if (employees.isEmpty()) {
+      throw CustomResponseException
+          .badRequestException("This employee currently has no team members assigned to them.");
+    }
+
+    EmployeeUnderManagerResponse response = new EmployeeUnderManagerResponse(
+        manager.getId(),
+        manager.getName(),
+        manager.getDepartment().getId(),
+        manager.getDepartment().getName(),
+        employees);
+
+    return new GlobalResponse<>(response);
   }
 
 }

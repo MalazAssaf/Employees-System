@@ -13,7 +13,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class DepartmentRequest {
+public class DepartmentCreateRequest {
   @NotBlank(message = "Name is required")
   @Size(min = 2, max = 50)
   @UniqueDepartmentName

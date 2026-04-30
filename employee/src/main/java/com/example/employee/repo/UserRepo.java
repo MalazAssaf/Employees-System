@@ -9,4 +9,6 @@ import com.example.employee.entity.User;
 
 public interface UserRepo extends JpaRepository<User, UUID> {
   Optional<User> findByUsername(String username);
+
+  void deleteByEmployeeId(UUID id);
 }

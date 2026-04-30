@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.employee.dtos.request.EmployeeRequest;
 import com.example.employee.dtos.response.EmployeeResponse;
+import com.example.employee.dtos.response.EmployeeUnderManagerResponse;
 import com.example.employee.service.EmployeeService;
 import com.example.employee.shared.GlobalResponse;
 
@@ -49,14 +50,19 @@ public class EmployeeController {
 
   @PreAuthorize("hasAuthority('ADMIN')")
   @DeleteMapping("/{id}")
-  public void deleteById(@PathVariable UUID id) {
-    service.delete(id);
+  public GlobalResponse<String> deleteById(@PathVariable UUID id) {
+    return service.delete(id);
   }
 
   @PreAuthorize("hasAuthority('ADMIN')")
   @PutMapping("/{id}")
   public GlobalResponse<EmployeeResponse> update(@PathVariable UUID id, @Valid @RequestBody EmployeeRequest req) {
     return service.update(id, req);
+  }
+
+  @GetMapping("manager/{id}")
+  public GlobalResponse<EmployeeUnderManagerResponse> getAllEmployeesUnderManager(@PathVariable UUID id) {
+    return service.getAllEmployeesUnderManager(id);
   }
 
 }

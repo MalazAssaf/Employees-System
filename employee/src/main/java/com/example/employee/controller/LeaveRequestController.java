@@ -54,8 +54,8 @@ public class LeaveRequestController {
   }
 
   @DeleteMapping("/{id}")
-  public void deleteById(@PathVariable UUID id) {
-    leaveRequestService.delete(id);
+  public GlobalResponse<String> deleteById(@PathVariable UUID id) {
+    return leaveRequestService.delete(id);
   }
 
   @PutMapping("/{id}")

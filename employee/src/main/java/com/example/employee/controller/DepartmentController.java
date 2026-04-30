@@ -3,7 +3,8 @@ package com.example.employee.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.employee.dtos.request.DepartmentRequest;
+import com.example.employee.dtos.request.AssignManagerRequest;
+import com.example.employee.dtos.request.DepartmentCreateRequest;
 import com.example.employee.dtos.response.DepartmentResponse;
 import com.example.employee.dtos.response.DepartmentWithEmployeesResponse;
 import com.example.employee.service.DepartmentService;
@@ -15,9 +16,11 @@ import lombok.RequiredArgsConstructor;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -46,7 +49,7 @@ public class DepartmentController {
 
   @PreAuthorize("hasAuthority('ADMIN')")
   @PostMapping
-  public GlobalResponse<DepartmentResponse> create(@Valid @RequestBody DepartmentRequest req) {
+  public GlobalResponse<DepartmentResponse> create(@Valid @RequestBody DepartmentCreateRequest req) {
     return service.create(req);
   }
 
@@ -59,8 +62,20 @@ public class DepartmentController {
   @PreAuthorize("hasAuthority('ADMIN')")
   @PutMapping("/{id}")
   public GlobalResponse<DepartmentResponse> update(@PathVariable UUID id,
-      @Valid @RequestBody DepartmentRequest request) {
+      @Valid @RequestBody DepartmentCreateRequest request) {
     return service.update(id, request);
+  }
+
+  @PatchMapping("/{id}/manager")
+  public GlobalResponse<String> assignManager(
+      @PathVariable UUID id,
+      @Valid @RequestBody AssignManagerRequest request) {
+    return service.assignManagerToDepartment(id, request);
+  }
+
+  @DeleteMapping("/{id}/manager")
+  public GlobalResponse<String> removeManager(@PathVariable UUID id) {
+    return service.removeManagerFromDepartment(id);
   }
 
 }

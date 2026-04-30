@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.employee.dtos.request.LeaveRequestPatchRequest;
 import com.example.employee.dtos.request.LeaveRequestRequest;
@@ -98,18 +99,21 @@ public class LeaveRequestService {
     return new GlobalResponse<>(toDto(leaveRequestRepo.save(leaveRequest)));
   }
 
+  @Transactional
   @Caching(evict = {
       @CacheEvict(value = "leaveRequests", key = "#id"),
       @CacheEvict(value = "allLeaveRequests", allEntries = true),
       @CacheEvict(value = "employeeLeaveRequests", allEntries = true)
   })
-  public void delete(UUID id) {
+  public GlobalResponse<String> delete(UUID id) {
 
     if (!leaveRequestRepo.existsById(id)) {
-      throw CustomResponseException.resourceNotFoundException("leaveRequestRepo with " + id + " Not found!");
+      throw CustomResponseException.resourceNotFoundException("Leave request with " + id + " Not found!");
     }
 
     leaveRequestRepo.deleteById(id);
+
+    return new GlobalResponse<String>("The leave Request with id " + id + "is deleted successfully!");
   }
 
   @CachePut(value = "leaveRequests", key = "#id")

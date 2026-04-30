@@ -22,4 +22,10 @@ public interface EmployeeRepo extends JpaRepository<Employee, UUID> {
   List<Employee> findAll();
 
   List<Employee> findAllByDepartmentId(UUID departmentId);
+
+  List<Employee> findAllByManagerId(UUID managerId);
+
+  boolean existsByManagerId(UUID managerId);
+
+  boolean existsByDepartmentId(UUID departmentId);
 }

@@ -10,4 +10,6 @@ import com.example.employee.entity.Department;
 @Repository
 public interface DepartmentRepo extends JpaRepository<Department, UUID> {
   boolean existsByNameIgnoreCase(String name);
+
+  boolean existsByManagerId(UUID employeeId);
 }
