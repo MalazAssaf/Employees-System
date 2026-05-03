@@ -2,6 +2,9 @@ package com.example.employee.service;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.Date;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -9,8 +12,10 @@ import com.example.employee.dtos.request.EmployeeRequest;
 import com.example.employee.dtos.response.EmployeeInDepartmentResponse;
 import com.example.employee.dtos.response.EmployeeResponse;
 import com.example.employee.dtos.response.EmployeeUnderManagerResponse;
+import com.example.employee.entity.ActivationToken;
 import com.example.employee.entity.Department;
 import com.example.employee.entity.Employee;
+import com.example.employee.repo.ActivationTokenRepo;
 import com.example.employee.repo.DepartmentRepo;
 import com.example.employee.repo.EmployeeRepo;
 import com.example.employee.repo.LeaveRequestRepo;
@@ -26,7 +31,12 @@ public class EmployeeService {
   private final EmployeeRepo employeeRepo;
   private final DepartmentRepo departmentRepo;
   private final LeaveRequestRepo leaveRequestRepo;
+  private final ActivationTokenRepo activationTokenRepo;
   private final UserRepo userRepo;
+  private final EmailService emailService;
+
+  @Value("${application.security.jwt.expiration}")
+  private long jwtExpiration;
 
   private EmployeeResponse toDto(Employee employee) {
     UUID managerId = null;
@@ -60,11 +70,14 @@ public class EmployeeService {
     return new GlobalResponse<>(employees);
   }
 
+  @Transactional
   public GlobalResponse<EmployeeResponse> create(EmployeeRequest req) {
+    Employee employee = new Employee();
+
     Department department = departmentRepo.findById(req.getDepartmentId())
         .orElseThrow(() -> CustomResponseException
             .resourceNotFoundException("Department with " + req.getDepartmentId() + " Not found!"));
-    Employee employee = new Employee();
+
     employee.setName(req.getName());
     employee.setEmail(req.getEmail());
     employee.setPhoneNumber(req.getPhoneNumber());
@@ -77,7 +90,20 @@ public class EmployeeService {
       employee.setManager(manager);
     }
 
-    return new GlobalResponse<>(toDto(employeeRepo.save(employee)));
+    employee = employeeRepo.save(employee);
+
+    String generatedToken = UUID.randomUUID().toString();
+    ActivationToken activationToken = new ActivationToken();
+
+    activationToken.setToken(generatedToken);
+    activationToken.setExpiryDate(new Date(System.currentTimeMillis() + jwtExpiration));
+    activationToken.setEmployee(employee);
+
+    activationTokenRepo.save(activationToken);
+
+    emailService.sendActivationEmail(req.getEmail(), generatedToken);
+
+    return new GlobalResponse<EmployeeResponse>(toDto(employee));
   }
 
   @Transactional

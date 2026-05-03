@@ -32,6 +32,8 @@ public class Employee {
   private String phoneNumber;
   private LocalDate hireDate;
 
+  private Boolean isActivated = false;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "department_id")
   private Department department;
