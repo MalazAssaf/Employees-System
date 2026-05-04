@@ -1,22 +1,23 @@
 package com.example.employee.controller;
 
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.employee.dtos.request.AssignManagerRequest;
 import com.example.employee.dtos.request.DepartmentCreateRequest;
 import com.example.employee.dtos.response.DepartmentResponse;
 import com.example.employee.dtos.response.DepartmentWithEmployeesResponse;
+import com.example.employee.dtos.response.PaginatedResponse;
 import com.example.employee.service.DepartmentService;
 import com.example.employee.shared.GlobalResponse;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-import java.util.List;
 import java.util.UUID;
 
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,13 +39,24 @@ public class DepartmentController {
   }
 
   @GetMapping()
-  public GlobalResponse<List<DepartmentResponse>> getAll() {
-    return service.getAll();
+  public GlobalResponse<PaginatedResponse<DepartmentResponse>> getAll(@RequestParam(defaultValue = "1") int page,
+      @RequestParam(defaultValue = "3") int size, HttpServletRequest request) {
+    String baseUrl = request.getRequestURI();
+
+    PaginatedResponse<DepartmentResponse> paginatedResponse = service.getAll(page, size, baseUrl);
+
+    return new GlobalResponse<>(paginatedResponse);
   }
 
   @GetMapping("/{id}/employees")
-  public GlobalResponse<DepartmentWithEmployeesResponse> getEmployeeByDepartment(@PathVariable UUID id) {
-    return service.getDepartmentWithEmployees(id);
+  public GlobalResponse<DepartmentWithEmployeesResponse> getEmployeeByDepartment(@PathVariable UUID id,
+      @RequestParam(defaultValue = "1") int page,
+      @RequestParam(defaultValue = "3") int size, HttpServletRequest request) {
+    String baseUrl = request.getRequestURI();
+
+    DepartmentWithEmployeesResponse paginatedResponse = service.getDepartmentWithEmployees(id, page,
+        size, baseUrl);
+    return new GlobalResponse<>(paginatedResponse);
   }
 
   @PreAuthorize("hasAuthority('ADMIN')")

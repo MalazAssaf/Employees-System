@@ -1,22 +1,26 @@
 package com.example.employee.service;
 
-import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
 
 import com.example.employee.dtos.request.AssignManagerRequest;
 import com.example.employee.dtos.request.DepartmentCreateRequest;
 import com.example.employee.dtos.response.DepartmentResponse;
 import com.example.employee.dtos.response.DepartmentWithEmployeesResponse;
 import com.example.employee.dtos.response.EmployeeInDepartmentResponse;
+import com.example.employee.dtos.response.PaginatedResponse;
 import com.example.employee.entity.Department;
 import com.example.employee.entity.Employee;
 import com.example.employee.repo.DepartmentRepo;
 import com.example.employee.repo.EmployeeRepo;
 import com.example.employee.shared.CustomResponseException;
 import com.example.employee.shared.GlobalResponse;
+import com.example.employee.utils.PaginationUtil;
+
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -43,9 +47,13 @@ public class DepartmentService {
     return new GlobalResponse<>(toDto(department));
   }
 
-  public GlobalResponse<List<DepartmentResponse>> getAll() {
-    List<DepartmentResponse> departments = departmentRepo.findAll().stream().map(this::toDto).toList();
-    return new GlobalResponse<List<DepartmentResponse>>(departments);
+  public PaginatedResponse<DepartmentResponse> getAll(int page, int size, String baseUrl) {
+
+    Pageable pageable = PaginationUtil.createPageable(page, size);
+
+    Page<DepartmentResponse> departments = departmentRepo.findAll(pageable).map(this::toDto);
+
+    return PaginationUtil.buildResponse(departments, page, size, baseUrl);
   }
 
   @Transactional
@@ -122,26 +130,27 @@ public class DepartmentService {
     return new GlobalResponse<>(toDto(departmentRepo.save(department)));
   }
 
-  public GlobalResponse<DepartmentWithEmployeesResponse> getDepartmentWithEmployees(UUID id) {
+  public DepartmentWithEmployeesResponse getDepartmentWithEmployees(UUID id, int page, int size,
+      String baseUrl) {
 
     Department department = departmentRepo.findById(id)
         .orElseThrow(() -> CustomResponseException.resourceNotFoundException(
             "Department with " + id + " Not found!"));
 
-    List<EmployeeInDepartmentResponse> employees = employeeRepo
-        .findAllByDepartmentId(id)
-        .stream()
+    Pageable pageable = PaginationUtil.createPageable(page, size);
+
+    Page<EmployeeInDepartmentResponse> employeesPage = employeeRepo.findAllByDepartmentId(id, pageable)
         .map(emp -> new EmployeeInDepartmentResponse(
             emp.getId(),
             emp.getName(),
-            emp.getEmail()))
-        .toList();
+            emp.getEmail()));
 
-    DepartmentWithEmployeesResponse response = new DepartmentWithEmployeesResponse(
+    PaginatedResponse<EmployeeInDepartmentResponse> paginatedEmployees = PaginationUtil.buildResponse(employeesPage,
+        page, size, baseUrl);
+
+    return new DepartmentWithEmployeesResponse(
         department.getId(),
         department.getName(),
-        employees);
-
-    return new GlobalResponse<>(response);
+        paginatedEmployees);
   }
 }

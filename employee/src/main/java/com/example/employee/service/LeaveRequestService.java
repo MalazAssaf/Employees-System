@@ -1,6 +1,5 @@
 package com.example.employee.service;
 
-import java.util.List;
 import java.util.UUID;
 
 import org.springframework.cache.annotation.CacheEvict;
@@ -15,6 +14,7 @@ import com.example.employee.dtos.request.LeaveRequestUpdateRequest;
 import com.example.employee.dtos.response.EmployeeLeaveRequestsResponse;
 import com.example.employee.dtos.response.LeaveRequestResponse;
 import com.example.employee.dtos.response.LeaveRequestWithEmployeeResponse;
+import com.example.employee.dtos.response.PaginatedResponse;
 import com.example.employee.entity.Employee;
 import com.example.employee.entity.LeaveRequest;
 import com.example.employee.entity.LeaveRequestStatus;
@@ -22,8 +22,12 @@ import com.example.employee.repo.EmployeeRepo;
 import com.example.employee.repo.LeaveRequestRepo;
 import com.example.employee.shared.CustomResponseException;
 import com.example.employee.shared.GlobalResponse;
+import com.example.employee.utils.PaginationUtil;
+
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import lombok.RequiredArgsConstructor;
 
@@ -51,35 +55,43 @@ public class LeaveRequestService {
   }
 
   @Cacheable(value = "allLeaveRequests")
-  public GlobalResponse<List<LeaveRequestWithEmployeeResponse>> getAll() {
-    List<LeaveRequestWithEmployeeResponse> leaveRequests = leaveRequestRepo.findAll()
-        .stream().map(this::toDto).toList();
-    return new GlobalResponse<>(leaveRequests);
+  public PaginatedResponse<LeaveRequestWithEmployeeResponse> getAll(int page, int size, String Url) {
+
+    Pageable pageable = PaginationUtil.createPageable(page, size);
+
+    Page<LeaveRequestWithEmployeeResponse> leaveRequests = leaveRequestRepo.findAll(pageable).map(this::toDto);
+
+    return PaginationUtil.buildResponse(leaveRequests, page, size, Url);
+
   }
 
-  @Cacheable(value = "employeeLeaveRequests", key = "#id")
-  public GlobalResponse<EmployeeLeaveRequestsResponse> getRequestsByEmployee(UUID id) {
+  @Cacheable(value = "employeeLeaveRequests", key = "{#id, #page, #size}")
+  public EmployeeLeaveRequestsResponse getRequestsByEmployee(UUID id, int page, int size,
+      String baseUrl) {
+
+    Pageable pageable = PaginationUtil.createPageable(page, size);
 
     Employee employee = employeeRepo.findById(id).orElseThrow(() -> CustomResponseException
         .resourceNotFoundException("Employee with id: " + id + " not found!"));
 
-    List<LeaveRequestResponse> requests = leaveRequestRepo
-        .findAllByEmployeeId(id)
-        .stream()
+    Page<LeaveRequestResponse> leaverequestsPage = leaveRequestRepo
+        .findAllByEmployeeId(id, pageable)
         .map(r -> new LeaveRequestResponse(
             r.getId(),
             r.getStartDate(),
             r.getEndDate(),
             r.getReason(),
-            r.getStatus()))
-        .toList();
+            r.getStatus()));
 
-    EmployeeLeaveRequestsResponse response = new EmployeeLeaveRequestsResponse(
+    PaginatedResponse<LeaveRequestResponse> paginatedResponse = PaginationUtil.buildResponse(
+        leaverequestsPage, page,
+        size, baseUrl);
+
+    return new EmployeeLeaveRequestsResponse(
         employee.getId(),
         employee.getName(),
-        requests);
+        paginatedResponse);
 
-    return new GlobalResponse<>(response);
   }
 
   @Caching(evict = {
@@ -174,13 +186,13 @@ public class LeaveRequestService {
   })
   public GlobalResponse<LeaveRequestWithEmployeeResponse> updateLeaveRequestStatus(UUID id,
       LeaveRequestStatusUpdateRequest req) {
-    System.out.println("Hello From the service layer!");
 
     LeaveRequest leaveRequest = leaveRequestRepo.findById(id)
         .orElseThrow(() -> CustomResponseException.resourceNotFoundException(
             "Leave request with id " + id + " not found!"));
+
     leaveRequest.setStatus(LeaveRequestStatus.valueOf(req.status().toUpperCase()));
-    System.out.println("Hello From the update layer!");
+
     return new GlobalResponse<>(toDto(leaveRequestRepo.save(leaveRequest)));
   }
 

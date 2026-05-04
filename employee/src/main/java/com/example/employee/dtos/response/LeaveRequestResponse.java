@@ -6,9 +6,9 @@ import java.util.UUID;
 import com.example.employee.entity.LeaveRequestStatus;
 
 public record LeaveRequestResponse(UUID id,
-                LocalDate startDate,
-                LocalDate endDate,
-                String reason,
-                LeaveRequestStatus status) {
+    LocalDate startDate,
+    LocalDate endDate,
+    String reason,
+    LeaveRequestStatus status) {
 
 }

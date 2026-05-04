@@ -1,10 +1,11 @@
 package com.example.employee.service;
 
-import java.util.List;
 import java.util.UUID;
 import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +13,7 @@ import com.example.employee.dtos.request.EmployeeRequest;
 import com.example.employee.dtos.response.EmployeeInDepartmentResponse;
 import com.example.employee.dtos.response.EmployeeResponse;
 import com.example.employee.dtos.response.EmployeeUnderManagerResponse;
+import com.example.employee.dtos.response.PaginatedResponse;
 import com.example.employee.entity.ActivationToken;
 import com.example.employee.entity.Department;
 import com.example.employee.entity.Employee;
@@ -22,6 +24,8 @@ import com.example.employee.repo.LeaveRequestRepo;
 import com.example.employee.repo.UserRepo;
 import com.example.employee.shared.CustomResponseException;
 import com.example.employee.shared.GlobalResponse;
+import com.example.employee.utils.PaginationUtil;
+
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -65,9 +69,12 @@ public class EmployeeService {
     return new GlobalResponse<>(toDto(employee));
   }
 
-  public GlobalResponse<List<EmployeeResponse>> getAll() {
-    List<EmployeeResponse> employees = employeeRepo.findAll().stream().map(this::toDto).toList();
-    return new GlobalResponse<>(employees);
+  public PaginatedResponse<EmployeeResponse> getAll(int page, int size, String baseUrl) {
+    Pageable pageable = PaginationUtil.createPageable(page, size);
+
+    Page<EmployeeResponse> employees = employeeRepo.findAll(pageable).map(this::toDto);
+
+    return PaginationUtil.buildResponse(employees, page, size, baseUrl);
   }
 
   @Transactional
@@ -170,36 +177,34 @@ public class EmployeeService {
     return new GlobalResponse<>(toDto(employeeRepo.save(employee)));
   }
 
-  public GlobalResponse<EmployeeUnderManagerResponse> getAllEmployeesUnderManager(UUID managerId) {
+  public EmployeeUnderManagerResponse getAllEmployeesUnderManager(UUID managerId, int page, int size, String baseUrl) {
 
     Employee manager = employeeRepo.findById(managerId)
         .orElseThrow(
             () -> CustomResponseException.resourceNotFoundException("Manager with id " + managerId + " not found!"));
 
-    if (!employeeRepo.existsByManagerId(manager.getId())) {
-      throw CustomResponseException
-          .badRequestException("This employee does not manage any team members");
-    }
+    Pageable pageable = PaginationUtil.createPageable(page, size);
 
-    List<EmployeeInDepartmentResponse> employees = employeeRepo.findAllByManagerId(managerId)
-        .stream()
-        .map(employee -> new EmployeeInDepartmentResponse(employee.getId(),
-            employee.getName(), employee.getEmail()))
-        .toList();
+    Page<EmployeeInDepartmentResponse> employeesPage = employeeRepo.findAllByManagerId(managerId, pageable)
+        .map(employee -> new EmployeeInDepartmentResponse(
+            employee.getId(),
+            employee.getName(),
+            employee.getEmail()));
 
-    if (employees.isEmpty()) {
+    if (employeesPage.isEmpty() && page == 1) {
       throw CustomResponseException
           .badRequestException("This employee currently has no team members assigned to them.");
     }
 
-    EmployeeUnderManagerResponse response = new EmployeeUnderManagerResponse(
+    PaginatedResponse<EmployeeInDepartmentResponse> paginatedTeam = PaginationUtil.buildResponse(employeesPage, page,
+        size, baseUrl);
+
+    return new EmployeeUnderManagerResponse(
         manager.getId(),
         manager.getName(),
         manager.getDepartment().getId(),
         manager.getDepartment().getName(),
-        employees);
-
-    return new GlobalResponse<>(response);
+        paginatedTeam);
   }
 
 }

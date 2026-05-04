@@ -5,6 +5,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -21,9 +23,9 @@ public interface EmployeeRepo extends JpaRepository<Employee, UUID> {
   @EntityGraph(attributePaths = { "department" }) // Solve N+1 Query problem
   List<Employee> findAll();
 
-  List<Employee> findAllByDepartmentId(UUID departmentId);
+  Page<Employee> findAllByDepartmentId(UUID departmentId, Pageable Pageable);
 
-  List<Employee> findAllByManagerId(UUID managerId);
+  Page<Employee> findAllByManagerId(UUID managerId, Pageable Pegable);
 
   boolean existsByManagerId(UUID managerId);
 
