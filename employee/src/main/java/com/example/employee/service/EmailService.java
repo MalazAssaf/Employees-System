@@ -19,7 +19,7 @@ public class EmailService {
   private String EMAIL;
 
   public void sendActivationEmail(String toEmail, String token) {
-    String activationLink = ORIGIN + "?token=" + token;
+    String activationLink = ORIGIN + "/signup?token=" + token;
     SimpleMailMessage message = new SimpleMailMessage();
     message.setFrom(EMAIL);
     message.setTo(toEmail);
@@ -31,6 +31,18 @@ public class EmailService {
             activationLink + "\n\n" +
             "Note: This link is valid for 24 hours only.\n\n" +
             "Best Regards,\nSystem Admin");
+
+    mailSender.send(message);
+  }
+
+  public void sendPasswordResetEmail(String toEmail, String token) {
+    String activationLink = ORIGIN + "/signup?token=" + token;
+
+    SimpleMailMessage message = new SimpleMailMessage();
+    message.setFrom(EMAIL);
+    message.setTo(toEmail);
+    message.setSubject("Rest Your Password!");
+    message.setText("Hi! Click the link below to reset your password: \n" + activationLink);
 
     mailSender.send(message);
   }

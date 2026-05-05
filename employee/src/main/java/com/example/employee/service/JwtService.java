@@ -33,14 +33,14 @@ public class JwtService {
     return claimsResolver.apply(claims);
   }
 
-  public String generateToken(String username) {
-    return generateToken(new HashMap<>(), username);
+  public String generateToken(UserDetails user) {
+    return generateToken(new HashMap<>(), user);
   }
 
-  public String generateToken(Map<String, Object> extraClaims, String username) {
+  public String generateToken(Map<String, Object> extraClaims, UserDetails user) {
     return Jwts.builder()
         .setClaims(extraClaims)
-        .setSubject(username.toLowerCase())
+        .setSubject(user.getUsername().toLowerCase())
         .setIssuedAt(new Date(System.currentTimeMillis()))
         .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
         .signWith(getSignInKey(), SignatureAlgorithm.HS256)

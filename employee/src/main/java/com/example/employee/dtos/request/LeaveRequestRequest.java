@@ -3,10 +3,7 @@ package com.example.employee.dtos.request;
 import java.time.LocalDate;
 import java.util.UUID;
 
-import com.example.employee.entity.LeaveRequestStatus;
 import com.example.employee.validators.ValidDateRange;
-import com.example.employee.validators.ValidEnum;
-
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
