@@ -11,17 +11,15 @@ import com.example.employee.dtos.request.LeaveRequestPatchRequest;
 import com.example.employee.dtos.request.LeaveRequestRequest;
 import com.example.employee.dtos.request.LeaveRequestStatusUpdateRequest;
 import com.example.employee.dtos.request.LeaveRequestUpdateRequest;
-import com.example.employee.dtos.response.EmployeeLeaveRequestsResponse;
+import com.example.employee.dtos.response.EmployeeSummaryResponse;
 import com.example.employee.dtos.response.LeaveRequestResponse;
 import com.example.employee.dtos.response.LeaveRequestWithEmployeeResponse;
-import com.example.employee.dtos.response.PaginatedResponse;
 import com.example.employee.entity.Employee;
 import com.example.employee.entity.LeaveRequest;
 import com.example.employee.entity.LeaveRequestStatus;
 import com.example.employee.repo.EmployeeRepo;
 import com.example.employee.repo.LeaveRequestRepo;
 import com.example.employee.shared.CustomResponseException;
-import com.example.employee.shared.GlobalResponse;
 import com.example.employee.utils.PaginationUtil;
 
 import org.springframework.cache.annotation.Cacheable;
@@ -47,32 +45,36 @@ public class LeaveRequestService {
         leaveRequest.getEmployee().getId());
   }
 
-  public GlobalResponse<LeaveRequestWithEmployeeResponse> getById(UUID id) {
+  public LeaveRequestWithEmployeeResponse getById(UUID id) {
     LeaveRequest leaveRequest = leaveRequestRepo.findById(id)
         .orElseThrow(() -> CustomResponseException.resourceNotFoundException(
             "Leave request with id " + id + " not found!"));
-    return new GlobalResponse<>(toDto(leaveRequest));
+    return toDto(leaveRequest);
   }
 
   @Cacheable(value = "allLeaveRequests")
-  public PaginatedResponse<LeaveRequestWithEmployeeResponse> getAll(int page, int size, String Url) {
+  public Page<LeaveRequestWithEmployeeResponse> getAll(int page, int size) {
 
     Pageable pageable = PaginationUtil.createPageable(page, size);
 
-    Page<LeaveRequestWithEmployeeResponse> leaveRequests = leaveRequestRepo.findAll(pageable).map(this::toDto);
-
-    return PaginationUtil.buildResponse(leaveRequests, page, size, Url);
+    return leaveRequestRepo.findAll(pageable).map(this::toDto);
 
   }
 
+  public EmployeeSummaryResponse getEmployeeInfo(UUID employeeId) {
+
+    Employee employee = employeeRepo.findById(employeeId).orElseThrow(
+        () -> CustomResponseException.resourceNotFoundException("Manager with id " + employeeId + " not found!"));
+
+    return new EmployeeSummaryResponse(
+        employee.getId(),
+        employee.getName());
+  }
+
   @Cacheable(value = "employeeLeaveRequests", key = "{#id, #page, #size}")
-  public EmployeeLeaveRequestsResponse getRequestsByEmployee(UUID id, int page, int size,
-      String baseUrl) {
+  public Page<LeaveRequestResponse> getRequestsByEmployee(UUID id, int page, int size) {
 
     Pageable pageable = PaginationUtil.createPageable(page, size);
-
-    Employee employee = employeeRepo.findById(id).orElseThrow(() -> CustomResponseException
-        .resourceNotFoundException("Employee with id: " + id + " not found!"));
 
     Page<LeaveRequestResponse> leaverequestsPage = leaveRequestRepo
         .findAllByEmployeeId(id, pageable)
@@ -83,14 +85,7 @@ public class LeaveRequestService {
             r.getReason(),
             r.getStatus()));
 
-    PaginatedResponse<LeaveRequestResponse> paginatedResponse = PaginationUtil.buildResponse(
-        leaverequestsPage, page,
-        size, baseUrl);
-
-    return new EmployeeLeaveRequestsResponse(
-        employee.getId(),
-        employee.getName(),
-        paginatedResponse);
+    return leaverequestsPage;
 
   }
 
@@ -98,7 +93,8 @@ public class LeaveRequestService {
       @CacheEvict(value = "allLeaveRequests", allEntries = true),
       @CacheEvict(value = "employeeLeaveRequests", key = "#req.employeeId")
   })
-  public GlobalResponse<LeaveRequestWithEmployeeResponse> create(LeaveRequestRequest req) {
+  public LeaveRequestWithEmployeeResponse create(LeaveRequestRequest req) {
+
     Employee employee = employeeRepo.findById(req.getEmployeeId()).orElseThrow(() -> CustomResponseException
         .resourceNotFoundException("Employee with id: " + req.getEmployeeId() + " not found!"));
 
@@ -108,7 +104,9 @@ public class LeaveRequestService {
     leaveRequest.setReason(req.getReason());
     leaveRequest.setEmployee(employee);
 
-    return new GlobalResponse<>(toDto(leaveRequestRepo.save(leaveRequest)));
+    leaveRequest = leaveRequestRepo.save(leaveRequest);
+
+    return toDto(leaveRequest);
   }
 
   @Transactional
@@ -117,7 +115,7 @@ public class LeaveRequestService {
       @CacheEvict(value = "allLeaveRequests", allEntries = true),
       @CacheEvict(value = "employeeLeaveRequests", allEntries = true)
   })
-  public GlobalResponse<String> delete(UUID id) {
+  public String delete(UUID id) {
 
     if (!leaveRequestRepo.existsById(id)) {
       throw CustomResponseException.resourceNotFoundException("Leave request with " + id + " Not found!");
@@ -125,7 +123,7 @@ public class LeaveRequestService {
 
     leaveRequestRepo.deleteById(id);
 
-    return new GlobalResponse<String>("The leave Request with id " + id + "is deleted successfully!");
+    return ("The leave Request with id " + id + "is deleted successfully!");
   }
 
   @CachePut(value = "leaveRequests", key = "#id")
@@ -133,18 +131,24 @@ public class LeaveRequestService {
       @CacheEvict(value = "allLeaveRequests", allEntries = true),
       @CacheEvict(value = "employeeLeaveRequests", allEntries = true)
   })
-  public GlobalResponse<LeaveRequestWithEmployeeResponse> update(UUID id, LeaveRequestUpdateRequest req) {
+  public LeaveRequestWithEmployeeResponse update(UUID id, LeaveRequestUpdateRequest req) {
 
     LeaveRequest leaveRequest = leaveRequestRepo.findById(id)
         .orElseThrow(() -> CustomResponseException.resourceNotFoundException(
             "Leave request with id " + id + " not found!"));
 
-    leaveRequest.setStartDate(req.startDate());
+    if ((leaveRequest.getStatus() != LeaveRequestStatus.PENDING)) {
+      throw CustomResponseException.badRequestException(
+          "Cannot edit the request because it is no longer pending.");
+    }
+
     leaveRequest.setStartDate(req.startDate());
     leaveRequest.setEndDate(req.endDate());
     leaveRequest.setReason(req.reason());
 
-    return new GlobalResponse<>(toDto(leaveRequestRepo.save(leaveRequest)));
+    leaveRequest = leaveRequestRepo.save(leaveRequest);
+
+    return toDto(leaveRequest);
   }
 
   @CachePut(value = "leaveRequests", key = "#id")
@@ -152,7 +156,7 @@ public class LeaveRequestService {
       @CacheEvict(value = "allLeaveRequests", allEntries = true),
       @CacheEvict(value = "employeeLeaveRequests", allEntries = true)
   })
-  public GlobalResponse<LeaveRequestWithEmployeeResponse> patch(UUID id, LeaveRequestPatchRequest req) {
+  public LeaveRequestWithEmployeeResponse patch(UUID id, LeaveRequestPatchRequest req) {
 
     LeaveRequest leaveRequest = leaveRequestRepo.findById(id)
         .orElseThrow(() -> CustomResponseException.resourceNotFoundException(
@@ -176,7 +180,9 @@ public class LeaveRequestService {
       }
     }
 
-    return new GlobalResponse<>(toDto(leaveRequestRepo.save(leaveRequest)));
+    leaveRequest = leaveRequestRepo.save(leaveRequest);
+
+    return toDto(leaveRequest);
   }
 
   @Caching(evict = {
@@ -184,7 +190,7 @@ public class LeaveRequestService {
       @CacheEvict(value = "allLeaveRequests", allEntries = true),
       @CacheEvict(value = "employeeLeaveRequests", allEntries = true)
   })
-  public GlobalResponse<LeaveRequestWithEmployeeResponse> updateLeaveRequestStatus(UUID id,
+  public LeaveRequestWithEmployeeResponse updateLeaveRequestStatus(UUID id,
       LeaveRequestStatusUpdateRequest req) {
 
     LeaveRequest leaveRequest = leaveRequestRepo.findById(id)
@@ -193,7 +199,9 @@ public class LeaveRequestService {
 
     leaveRequest.setStatus(LeaveRequestStatus.valueOf(req.status().toUpperCase()));
 
-    return new GlobalResponse<>(toDto(leaveRequestRepo.save(leaveRequest)));
+    leaveRequest = leaveRequestRepo.save(leaveRequest);
+
+    return toDto(leaveRequest);
   }
 
 }

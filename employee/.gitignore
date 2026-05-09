@@ -33,5 +33,5 @@ build/
 .vscode/
 
 # Ignore sensitive application properties
-   **/application.properties
-   **/application.yml
+**/application.properties
+**/application.yml

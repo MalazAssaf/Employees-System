@@ -4,16 +4,16 @@ import java.util.UUID;
 import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.employee.dtos.request.EmployeeRequest;
-import com.example.employee.dtos.response.EmployeeInDepartmentResponse;
 import com.example.employee.dtos.response.EmployeeResponse;
-import com.example.employee.dtos.response.EmployeeUnderManagerResponse;
-import com.example.employee.dtos.response.PaginatedResponse;
+import com.example.employee.dtos.response.EmployeeSummaryResponse;
+import com.example.employee.dtos.response.ManagerResponse;
 import com.example.employee.entity.ActivationToken;
 import com.example.employee.entity.Department;
 import com.example.employee.entity.Employee;
@@ -23,7 +23,6 @@ import com.example.employee.repo.EmployeeRepo;
 import com.example.employee.repo.LeaveRequestRepo;
 import com.example.employee.repo.UserRepo;
 import com.example.employee.shared.CustomResponseException;
-import com.example.employee.shared.GlobalResponse;
 import com.example.employee.utils.PaginationUtil;
 
 import lombok.RequiredArgsConstructor;
@@ -63,22 +62,21 @@ public class EmployeeService {
         managerName);
   }
 
-  public GlobalResponse<EmployeeResponse> getById(UUID id) {
+  public EmployeeResponse getById(UUID id) {
     Employee employee = employeeRepo.findById(id).orElseThrow(() -> CustomResponseException
         .resourceNotFoundException("Employee with id: " + id + " not found!"));
-    return new GlobalResponse<>(toDto(employee));
+    return toDto(employee);
   }
 
-  public PaginatedResponse<EmployeeResponse> getAll(int page, int size, String baseUrl) {
+  public Page<EmployeeResponse> getAll(int page, int size) {
     Pageable pageable = PaginationUtil.createPageable(page, size);
 
-    Page<EmployeeResponse> employees = employeeRepo.findAll(pageable).map(this::toDto);
-
-    return PaginationUtil.buildResponse(employees, page, size, baseUrl);
+    return employeeRepo.findAll(pageable)
+        .map(this::toDto);
   }
 
   @Transactional
-  public GlobalResponse<EmployeeResponse> create(EmployeeRequest req) {
+  public EmployeeResponse create(EmployeeRequest req) {
     Employee employee = new Employee();
 
     Department department = departmentRepo.findById(req.getDepartmentId())
@@ -110,11 +108,11 @@ public class EmployeeService {
 
     emailService.sendActivationEmail(req.getEmail(), generatedToken);
 
-    return new GlobalResponse<EmployeeResponse>(toDto(employee));
+    return toDto(employee);
   }
 
   @Transactional
-  public GlobalResponse<String> delete(UUID id) {
+  public String delete(UUID id) {
 
     if (!employeeRepo.existsById(id)) {
       throw CustomResponseException.resourceNotFoundException("Employee with id " + id + " not found!");
@@ -140,11 +138,10 @@ public class EmployeeService {
 
     employeeRepo.deleteById(id);
 
-    return new GlobalResponse<>(
-        "Employee with id " + id + " and their associated user account have been successfully deleted");
+    return "Employee with id " + id + " and their associated user account have been successfully deleted";
   }
 
-  public GlobalResponse<EmployeeResponse> update(UUID id, EmployeeRequest req) {
+  public EmployeeResponse update(UUID id, EmployeeRequest req) {
     Employee employee = employeeRepo.findById(id).orElseThrow(() -> CustomResponseException
         .resourceNotFoundException("Employee with id: " + id + " not found!"));
 
@@ -174,37 +171,37 @@ public class EmployeeService {
       employee.setManager(null);
     }
 
-    return new GlobalResponse<>(toDto(employeeRepo.save(employee)));
+    employee = employeeRepo.save(employee);
+
+    return (toDto(employee));
   }
 
-  public EmployeeUnderManagerResponse getAllEmployeesUnderManager(UUID managerId, int page, int size, String baseUrl) {
+  @Cacheable(value = "managerInfo", key = "#managerId")
+  @Transactional(readOnly = true)
+  public ManagerResponse getManagerInfo(UUID managerId) {
 
-    Employee manager = employeeRepo.findById(managerId)
-        .orElseThrow(
-            () -> CustomResponseException.resourceNotFoundException("Manager with id " + managerId + " not found!"));
+    Employee manager = employeeRepo.findById(managerId).orElseThrow(
+        () -> CustomResponseException.resourceNotFoundException("Manager with id " + managerId + " not found!"));
+
+    EmployeeSummaryResponse managerSummary = new EmployeeSummaryResponse(manager.getId(), manager.getName());
+
+    return new ManagerResponse(
+        managerSummary,
+        manager.getDepartment().getId(),
+        manager.getDepartment().getName());
+  }
+
+  @Transactional(readOnly = true)
+  public Page<EmployeeSummaryResponse> getEmployeesUnderManager(UUID managerId, int page, int size) {
 
     Pageable pageable = PaginationUtil.createPageable(page, size);
 
-    Page<EmployeeInDepartmentResponse> employeesPage = employeeRepo.findAllByManagerId(managerId, pageable)
-        .map(employee -> new EmployeeInDepartmentResponse(
-            employee.getId(),
-            employee.getName(),
-            employee.getEmail()));
+    Page<EmployeeSummaryResponse> employeesPage = employeeRepo.findAllByManagerId(managerId, pageable)
+        .map(emp -> new EmployeeSummaryResponse(
+            emp.getId(),
+            emp.getName()));
 
-    if (employeesPage.isEmpty() && page == 1) {
-      throw CustomResponseException
-          .badRequestException("This employee currently has no team members assigned to them.");
-    }
-
-    PaginatedResponse<EmployeeInDepartmentResponse> paginatedTeam = PaginationUtil.buildResponse(employeesPage, page,
-        size, baseUrl);
-
-    return new EmployeeUnderManagerResponse(
-        manager.getId(),
-        manager.getName(),
-        manager.getDepartment().getId(),
-        manager.getDepartment().getName(),
-        paginatedTeam);
+    return employeesPage;
   }
 
 }

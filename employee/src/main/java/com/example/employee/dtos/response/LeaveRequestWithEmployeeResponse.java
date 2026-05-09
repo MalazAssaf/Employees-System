@@ -5,11 +5,11 @@ import java.util.UUID;
 import com.example.employee.entity.LeaveRequestStatus;
 
 public record LeaveRequestWithEmployeeResponse(
-        UUID id,
-        LocalDate startDate,
-        LocalDate endDate,
-        String reason,
-        LeaveRequestStatus status,
-        UUID employeeId) {
+    UUID id,
+    LocalDate startDate,
+    LocalDate endDate,
+    String reason,
+    LeaveRequestStatus status,
+    UUID employeeId) {
 
 }

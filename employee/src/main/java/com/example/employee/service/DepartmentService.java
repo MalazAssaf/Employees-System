@@ -10,15 +10,12 @@ import org.springframework.data.domain.Page;
 import com.example.employee.dtos.request.AssignManagerRequest;
 import com.example.employee.dtos.request.DepartmentCreateRequest;
 import com.example.employee.dtos.response.DepartmentResponse;
-import com.example.employee.dtos.response.DepartmentWithEmployeesResponse;
-import com.example.employee.dtos.response.EmployeeInDepartmentResponse;
-import com.example.employee.dtos.response.PaginatedResponse;
+import com.example.employee.dtos.response.EmployeeSummaryResponse;
 import com.example.employee.entity.Department;
 import com.example.employee.entity.Employee;
 import com.example.employee.repo.DepartmentRepo;
 import com.example.employee.repo.EmployeeRepo;
 import com.example.employee.shared.CustomResponseException;
-import com.example.employee.shared.GlobalResponse;
 import com.example.employee.utils.PaginationUtil;
 
 import lombok.RequiredArgsConstructor;
@@ -31,33 +28,31 @@ public class DepartmentService {
 
   private DepartmentResponse toDto(Department department) {
 
-    UUID managerId = department.getManager() != null ? department.getManager().getId() : null;
-    String managerName = department.getManager() != null ? department.getManager().getName() : null;
-    return new DepartmentResponse(
-        department.getId(),
-        department.getName(),
-        managerId,
-        managerName);
+    Employee mgr = department.getManager();
+
+    EmployeeSummaryResponse manager = (mgr == null)
+        ? null
+        : new EmployeeSummaryResponse(mgr.getId(), mgr.getName());
+
+    return new DepartmentResponse(department.getId(), department.getName(), manager);
   }
 
-  public GlobalResponse<DepartmentResponse> getById(UUID id) {
+  public DepartmentResponse getById(UUID id) {
     Department department = departmentRepo.findById(id)
         .orElseThrow(() -> CustomResponseException.resourceNotFoundException("Department with " + id + " Not found!"));
 
-    return new GlobalResponse<>(toDto(department));
+    return toDto(department);
   }
 
-  public PaginatedResponse<DepartmentResponse> getAll(int page, int size, String baseUrl) {
+  public Page<DepartmentResponse> getAll(int page, int size) {
 
     Pageable pageable = PaginationUtil.createPageable(page, size);
 
-    Page<DepartmentResponse> departments = departmentRepo.findAll(pageable).map(this::toDto);
-
-    return PaginationUtil.buildResponse(departments, page, size, baseUrl);
+    return departmentRepo.findAll(pageable).map(this::toDto);
   }
 
   @Transactional
-  public GlobalResponse<String> assignManagerToDepartment(UUID departmentId, AssignManagerRequest req) {
+  public String assignManagerToDepartment(UUID departmentId, AssignManagerRequest req) {
 
     Department department = departmentRepo.findById(departmentId).orElseThrow(
         () -> CustomResponseException.resourceNotFoundException("Department with " + departmentId + " Not found!"));
@@ -81,18 +76,20 @@ public class DepartmentService {
 
     department.setManager(manager);
 
-    return new GlobalResponse<>(
-        "Successfully assigned " + manager.getName() + " as the manager of " + department.getName());
+    return "Successfully assigned " + manager.getName() + " as the manager of " + department.getName();
   }
 
-  public GlobalResponse<DepartmentResponse> create(DepartmentCreateRequest req) {
+  public DepartmentResponse create(DepartmentCreateRequest req) {
+
     Department department = new Department();
     department.setName(req.getName());
-    return new GlobalResponse<>(toDto(departmentRepo.save(department)));
+    department = departmentRepo.save(department);
+
+    return toDto(department);
   }
 
   @Transactional
-  public void delete(UUID id) {
+  public String delete(UUID id) {
     if (!departmentRepo.existsById(id)) {
       throw CustomResponseException.resourceNotFoundException("Department with " + id + " Not found!");
     }
@@ -102,10 +99,12 @@ public class DepartmentService {
           .badRequestException("Cannot Delete the department since employees are registered on it!");
     }
     departmentRepo.deleteById(id);
+
+    return "Department with id " + id + " has been successfully deleted";
   }
 
   @Transactional
-  public GlobalResponse<String> removeManagerFromDepartment(UUID departmentId) {
+  public String removeManagerFromDepartment(UUID departmentId) {
 
     Department department = departmentRepo.findById(departmentId)
         .orElseThrow(() -> CustomResponseException
@@ -119,38 +118,37 @@ public class DepartmentService {
 
     department.setManager(null);
 
-    return new GlobalResponse<>(
-        "Successfully removed " + managerName + " from managing the " + department.getName() + " department.");
+    return "Successfully removed " + managerName + " from managing the " + department.getName() + " department.";
   }
 
-  public GlobalResponse<DepartmentResponse> update(UUID id, DepartmentCreateRequest req) {
+  public DepartmentResponse update(UUID id, DepartmentCreateRequest req) {
     Department department = departmentRepo.findById(id)
         .orElseThrow(() -> CustomResponseException.resourceNotFoundException("Department with " + id + " Not found!"));
     department.setName(req.getName());
-    return new GlobalResponse<>(toDto(departmentRepo.save(department)));
+
+    department = departmentRepo.save(department);
+
+    return (toDto(department));
   }
 
-  public DepartmentWithEmployeesResponse getDepartmentWithEmployees(UUID id, int page, int size,
-      String baseUrl) {
-
-    Department department = departmentRepo.findById(id)
-        .orElseThrow(() -> CustomResponseException.resourceNotFoundException(
-            "Department with " + id + " Not found!"));
+  @Transactional(readOnly = true)
+  public Page<EmployeeSummaryResponse> getDepartmentWithEmployees(UUID departmentId, int page, int size) {
 
     Pageable pageable = PaginationUtil.createPageable(page, size);
 
-    Page<EmployeeInDepartmentResponse> employeesPage = employeeRepo.findAllByDepartmentId(id, pageable)
-        .map(emp -> new EmployeeInDepartmentResponse(
+    Page<EmployeeSummaryResponse> employeesPage = employeeRepo.findAllByDepartmentId(departmentId, pageable)
+        .map(emp -> new EmployeeSummaryResponse(
             emp.getId(),
-            emp.getName(),
-            emp.getEmail()));
+            emp.getName()));
 
-    PaginatedResponse<EmployeeInDepartmentResponse> paginatedEmployees = PaginationUtil.buildResponse(employeesPage,
-        page, size, baseUrl);
+    if (employeesPage.getTotalElements() == 0) {
+      throw CustomResponseException.resourceNotFoundException("This department has no employee");
+    }
 
-    return new DepartmentWithEmployeesResponse(
-        department.getId(),
-        department.getName(),
-        paginatedEmployees);
+    if (page > employeesPage.getTotalPages() && employeesPage.getTotalPages() > 0) {
+      throw CustomResponseException.badRequestException("Page out of range.");
+    }
+
+    return employeesPage;
   }
 }
