@@ -1,5 +1,7 @@
 package com.example.employee.service;
 
-public record LoginResponse(String token) {
+import com.example.employee.entity.UserRole;
+
+public record LoginResponse(String username, UserRole role) {
 
 }

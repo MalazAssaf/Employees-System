@@ -11,6 +11,8 @@ import com.example.employee.dtos.response.SignUpResponse;
 import com.example.employee.service.LoginResponse;
 import com.example.employee.service.AuthService;
 import com.example.employee.shared.GlobalResponse;
+
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -30,8 +32,8 @@ public class AuthController {
   }
 
   @PostMapping("/login")
-  public GlobalResponse<LoginResponse> login(@RequestBody LoginRequest req) {
-    return new GlobalResponse<>(authService.login(req));
+  public GlobalResponse<LoginResponse> login(@RequestBody LoginRequest req, HttpServletResponse response) {
+    return new GlobalResponse<>(authService.login(req, response));
   }
 
   @PostMapping("/forgot-password/{username}")

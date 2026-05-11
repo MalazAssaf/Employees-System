@@ -25,6 +25,8 @@ import com.example.employee.repo.PasswordResetTokenRepo;
 import com.example.employee.repo.UserRepo;
 import com.example.employee.shared.CustomResponseException;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
@@ -86,8 +88,7 @@ public class AuthService {
     return toDto(savedUser);
   }
 
-  public LoginResponse login(LoginRequest request) {
-    // Will throw AuthenticationException if it is not valid
+  public LoginResponse login(LoginRequest request, HttpServletResponse response) {
     Authentication authenitcation = authenticationManager.authenticate(
         new UsernamePasswordAuthenticationToken(request.username().toLowerCase(),
             request.password()));
@@ -96,7 +97,17 @@ public class AuthService {
 
     String jwtToken = jwtService.generateToken(user);
 
-    return new LoginResponse(jwtToken);
+    // Set httpOnly cookie
+    Cookie cookie = new Cookie("token", jwtToken);
+    cookie.setHttpOnly(true);
+    cookie.setSecure(false);
+    cookie.setPath("/");
+    cookie.setMaxAge(7 * 24 * 60 * 60); // 7 days
+    response.addCookie(cookie);
+
+    return new LoginResponse(
+        user.getUsername(),
+        user.getRole());
   }
 
   @Transactional
