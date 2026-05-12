@@ -2,6 +2,9 @@ package com.example.employee.dtos.request;
 
 import java.time.LocalDate;
 import java.util.UUID;
+
+import com.example.employee.entity.UserRole;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
@@ -29,6 +32,8 @@ public class EmployeeRequest {
   private LocalDate hireDate;
   @NotNull(message = "Department Id is required")
   private UUID departmentId;
+  @NotNull(message = "Role is required")
+  private UserRole role;
 
   private UUID managerId;
 }

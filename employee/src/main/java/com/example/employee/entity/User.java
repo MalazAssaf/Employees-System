@@ -10,8 +10,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -40,16 +38,13 @@ public class User implements UserDetails {
 
   private String password;
 
-  @Enumerated(EnumType.STRING)
-  private UserRole role;
-
   @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "employee_id", unique = true)
   private Employee employee;
 
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
-    return List.of(new SimpleGrantedAuthority(this.role.name().toUpperCase()));
+    return List.of(new SimpleGrantedAuthority(employee.getRole().name()));
   }
 
   @Override

@@ -18,7 +18,6 @@ import com.example.employee.entity.ActivationToken;
 import com.example.employee.entity.Employee;
 import com.example.employee.entity.PasswordResetToken;
 import com.example.employee.entity.User;
-import com.example.employee.entity.UserRole;
 import com.example.employee.repo.ActivationTokenRepo;
 import com.example.employee.repo.EmployeeRepo;
 import com.example.employee.repo.PasswordResetTokenRepo;
@@ -47,7 +46,7 @@ public class AuthService {
     return new SignUpResponse(
         user.getId(),
         user.getUsername(),
-        user.getRole(),
+        user.getEmployee().getRole(),
         user.getEmployee().getId());
   }
 
@@ -73,8 +72,6 @@ public class AuthService {
     User user = new User();
     user.setUsername(req.username().toLowerCase());
     user.setPassword(passwordEncoder.encode(req.password()));
-
-    user.setRole(UserRole.valueOf(req.role().toUpperCase()));
 
     user.setEmployee(employee);
 
@@ -107,7 +104,7 @@ public class AuthService {
 
     return new LoginResponse(
         user.getUsername(),
-        user.getRole());
+        user.getEmployee().getRole());
   }
 
   @Transactional

@@ -88,6 +88,7 @@ public class EmployeeService {
     employee.setPhoneNumber(req.getPhoneNumber());
     employee.setHireDate(req.getHireDate());
     employee.setDepartment(department);
+    employee.setRole(req.getRole());
 
     if (req.getManagerId() != null) {
       Employee manager = employeeRepo.findById(req.getManagerId()).orElseThrow(() -> CustomResponseException
