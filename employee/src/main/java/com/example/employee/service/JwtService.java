@@ -9,9 +9,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
+import com.example.employee.entity.User;
+
 import java.security.Key;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -34,7 +35,10 @@ public class JwtService {
   }
 
   public String generateToken(UserDetails user) {
-    return generateToken(new HashMap<>(), user);
+    User u = (User) user;
+    return generateToken(
+        Map.of("role", u.getEmployee().getRole().name()),
+        user);
   }
 
   public String generateToken(Map<String, Object> extraClaims, UserDetails user) {
