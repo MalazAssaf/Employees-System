@@ -38,7 +38,7 @@ public class User implements UserDetails {
 
   private String password;
 
-  @OneToOne(fetch = FetchType.LAZY)
+  @OneToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "employee_id", unique = true)
   private Employee employee;
 
