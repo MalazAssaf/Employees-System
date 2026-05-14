@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.UUID;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -105,6 +106,17 @@ public class AuthService {
     return new LoginResponse(
         user.getUsername(),
         user.getEmployee().getRole());
+  }
+
+  public ResponseEntity<Void> logout(HttpServletResponse response) {
+    Cookie cookie = new Cookie("token", null);
+    cookie.setHttpOnly(true);
+    cookie.setSecure(false);
+    cookie.setPath("/");
+    cookie.setMaxAge(0); // Deletes the cookie
+    response.addCookie(cookie);
+
+    return ResponseEntity.ok().build();
   }
 
   @Transactional

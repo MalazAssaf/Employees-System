@@ -36,6 +36,12 @@ public class AuthController {
     return new GlobalResponse<>(authService.login(req, response));
   }
 
+  @PostMapping("/logout")
+  public GlobalResponse<String> logout(HttpServletResponse response) {
+    authService.logout(response);
+    return new GlobalResponse<String>("Log out successfully");
+  }
+
   @PostMapping("/forgot-password/{username}")
   public GlobalResponse<String> forgotPassword(@PathVariable String username) {
     authService.initiatePasswordReset(username);
