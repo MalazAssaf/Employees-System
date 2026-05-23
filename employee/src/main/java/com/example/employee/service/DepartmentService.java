@@ -64,10 +64,11 @@ public class DepartmentService {
       throw CustomResponseException.badRequestException("Employee must belong to this department first!");
     }
 
-    if (!employeeRepo.existsByManagerId(manager.getId())) {
-      throw CustomResponseException
-          .badRequestException("This employee does not manage any team members. They cannot head a department!");
-    }
+    // if (!employeeRepo.existsByManagerId(manager.getId())) {
+    // throw CustomResponseException
+    // .badRequestException("This employee does not manage any team members. They
+    // cannot head a department!");
+    // }
 
     if (departmentRepo.existsByManagerId(manager.getId())
         && (department.getManager() == null || !department.getManager().getId().equals(manager.getId()))) {

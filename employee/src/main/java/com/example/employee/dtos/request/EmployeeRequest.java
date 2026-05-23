@@ -34,6 +34,4 @@ public class EmployeeRequest {
   private UUID departmentId;
   @NotNull(message = "Role is required")
   private UserRole role;
-
-  private UUID managerId;
 }

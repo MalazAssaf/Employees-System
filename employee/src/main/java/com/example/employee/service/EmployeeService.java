@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.employee.dtos.request.EmployeeRequest;
+import com.example.employee.dtos.request.EmployeeUpdateRequest;
+import com.example.employee.dtos.response.DepartmentResponse;
 import com.example.employee.dtos.response.EmployeeResponse;
 import com.example.employee.dtos.response.EmployeeSummaryResponse;
 import com.example.employee.dtos.response.ManagerResponse;
@@ -42,13 +44,23 @@ public class EmployeeService {
   private long jwtExpiration;
 
   private EmployeeResponse toDto(Employee employee) {
-    UUID managerId = null;
-    String managerName = null;
 
-    if (employee.getManager() != null) {
-      managerId = employee.getManager().getId();
-      managerName = employee.getManager().getName();
+    EmployeeSummaryResponse managerSummary = null;
+
+    if (employee.getDepartment().getManager() != null) {
+      Employee deptManager = employee.getDepartment().getManager();
+
+      // if the employee is their own department manager, don't put as manager
+      if (!deptManager.getId().equals(employee.getId())) {
+        managerSummary = new EmployeeSummaryResponse(deptManager.getId(), deptManager.getName());
+      }
     }
+
+    DepartmentResponse departmentResponse = new DepartmentResponse(
+        employee.getDepartment().getId(),
+        employee.getDepartment().getName(),
+        managerSummary // null if employee is their own manager
+    );
 
     return new EmployeeResponse(
         employee.getId(),
@@ -56,10 +68,9 @@ public class EmployeeService {
         employee.getEmail(),
         employee.getPhoneNumber(),
         employee.getHireDate(),
-        employee.getDepartment().getId(),
-        employee.getDepartment().getName(),
-        managerId,
-        managerName);
+        employee.getIsActivated(),
+        employee.getRole(),
+        departmentResponse);
   }
 
   public EmployeeResponse getById(UUID id) {
@@ -90,10 +101,8 @@ public class EmployeeService {
     employee.setDepartment(department);
     employee.setRole(req.getRole());
 
-    if (req.getManagerId() != null) {
-      Employee manager = employeeRepo.findById(req.getManagerId()).orElseThrow(() -> CustomResponseException
-          .resourceNotFoundException("Manager with id " + req.getManagerId() + " Not found!"));
-      employee.setManager(manager);
+    if (department.getManager() != null) {
+      employee.setManager(department.getManager());
     }
 
     employee = employeeRepo.save(employee);
@@ -142,39 +151,34 @@ public class EmployeeService {
     return "Employee with id " + id + " and their associated user account have been successfully deleted";
   }
 
-  public EmployeeResponse update(UUID id, EmployeeRequest req) {
-    Employee employee = employeeRepo.findById(id).orElseThrow(() -> CustomResponseException
-        .resourceNotFoundException("Employee with id: " + id + " not found!"));
+  public EmployeeResponse update(UUID id, EmployeeUpdateRequest req) {
+    Employee employee = employeeRepo.findById(id)
+        .orElseThrow(() -> CustomResponseException
+            .resourceNotFoundException("Employee with id: " + id + " not found!"));
 
-    Department department = departmentRepo.findById(req.getDepartmentId())
-        .orElseThrow(() -> CustomResponseException.resourceNotFoundException(
-            "Department with " + req.getDepartmentId() + " Not found!"));
+    Department department = departmentRepo.findById(req.departmentId())
+        .orElseThrow(() -> CustomResponseException
+            .resourceNotFoundException("Department with " + req.departmentId() + " Not found!"));
 
-    employee.setName(req.getName());
-    employee.setEmail(req.getEmail());
-    employee.setPhoneNumber(req.getPhoneNumber());
-    employee.setHireDate(req.getHireDate());
+    employee.setName(req.name());
+    employee.setPhoneNumber(req.phoneNumber());
     employee.setDepartment(department);
+    employee.setRole(req.role());
 
-    if (req.getManagerId() != null) {
-      if (employee.getId().equals(req.getManagerId())) {
-        throw CustomResponseException.badRequestException("Invalid Action: Employee cannot be their own manager!");
+    // manager always comes from department
+    if (department.getManager() != null) {
+      if (employee.getId().equals(department.getManager().getId())) {
+        throw CustomResponseException
+            .badRequestException("Invalid Action: Employee cannot be their own manager!");
       }
-
-      Employee manager = employeeRepo.findById(req.getManagerId())
-          .orElseThrow(() -> CustomResponseException
-              .resourceNotFoundException("Manager with id " + req.getManagerId() + " Not found!"));
-
-      employee.setManager(manager);
-    }
-
-    else {
-      employee.setManager(null);
+      employee.setManager(department.getManager());
+    } else {
+      employee.setManager(null); // department has no manager
     }
 
     employee = employeeRepo.save(employee);
 
-    return (toDto(employee));
+    return toDto(employee);
   }
 
   @Cacheable(value = "managerInfo", key = "#managerId")

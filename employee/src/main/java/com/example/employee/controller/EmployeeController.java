@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.example.employee.dtos.request.EmployeeRequest;
+import com.example.employee.dtos.request.EmployeeUpdateRequest;
 import com.example.employee.dtos.response.EmployeeResponse;
 import com.example.employee.dtos.response.EmployeeSummaryResponse;
 import com.example.employee.dtos.response.EmployeeUnderManagerResponse;
@@ -78,7 +79,7 @@ public class EmployeeController {
 
   @PreAuthorize("hasAuthority('ADMIN')")
   @PutMapping("/{id}")
-  public GlobalResponse<EmployeeResponse> update(@PathVariable UUID id, @Valid @RequestBody EmployeeRequest req) {
+  public GlobalResponse<EmployeeResponse> update(@PathVariable UUID id, @Valid @RequestBody EmployeeUpdateRequest req) {
     return new GlobalResponse<>(service.update(id, req));
   }
 
