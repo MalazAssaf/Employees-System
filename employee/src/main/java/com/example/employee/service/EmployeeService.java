@@ -5,6 +5,7 @@ import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ import com.example.employee.dtos.response.ManagerResponse;
 import com.example.employee.entity.ActivationToken;
 import com.example.employee.entity.Department;
 import com.example.employee.entity.Employee;
+import com.example.employee.event.EmployeeCreatedEvent;
 import com.example.employee.repo.ActivationTokenRepo;
 import com.example.employee.repo.DepartmentRepo;
 import com.example.employee.repo.EmployeeRepo;
@@ -38,7 +40,7 @@ public class EmployeeService {
   private final LeaveRequestRepo leaveRequestRepo;
   private final ActivationTokenRepo activationTokenRepo;
   private final UserRepo userRepo;
-  private final EmailService emailService;
+  private final ApplicationEventPublisher eventPublisher;
 
   @Value("${application.security.jwt.expiration}")
   private long jwtExpiration;
@@ -88,6 +90,17 @@ public class EmployeeService {
 
   @Transactional
   public EmployeeResponse create(EmployeeRequest req) {
+
+    if (employeeRepo.existsByEmail(req.getEmail())) {
+      throw CustomResponseException
+          .conflictException("Email already exists.");
+    }
+
+    if (employeeRepo.existsByPhoneNumber(req.getPhoneNumber())) {
+      throw CustomResponseException
+          .conflictException("Phone number already exists.");
+    }
+
     Employee employee = new Employee();
 
     Department department = departmentRepo.findById(req.getDepartmentId())
@@ -116,7 +129,7 @@ public class EmployeeService {
 
     activationTokenRepo.save(activationToken);
 
-    emailService.sendActivationEmail(req.getEmail(), generatedToken);
+    eventPublisher.publishEvent(new EmployeeCreatedEvent(employee.getEmail(), generatedToken));
 
     return toDto(employee);
   }

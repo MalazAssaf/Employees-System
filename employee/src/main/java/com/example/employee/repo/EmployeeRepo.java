@@ -30,4 +30,8 @@ public interface EmployeeRepo extends JpaRepository<Employee, UUID> {
   boolean existsByManagerId(UUID managerId);
 
   boolean existsByDepartmentId(UUID departmentId);
+
+  boolean existsByEmail(String email);
+
+  boolean existsByPhoneNumber(String phoneNumber);
 }
