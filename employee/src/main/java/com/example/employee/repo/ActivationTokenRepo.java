@@ -9,4 +9,6 @@ import com.example.employee.entity.ActivationToken;
 
 public interface ActivationTokenRepo extends JpaRepository<ActivationToken, UUID> {
   Optional<ActivationToken> findByToken(String token);
+
+  boolean existsByEmployeeId(UUID employeeId);
 }

@@ -141,6 +141,11 @@ public class EmployeeService {
       throw CustomResponseException.resourceNotFoundException("Employee with id " + id + " not found!");
     }
 
+    if (activationTokenRepo.existsByEmployeeId(id)) {
+      throw CustomResponseException.badRequestException(
+          "Employee can only be deleted after 24 hours of creation or once the account has been activated.");
+    }
+
     if (departmentRepo.existsByManagerId(id)) {
       throw CustomResponseException.badRequestException(
           "Cannot delete employee: They are currently managing a department. Please remove them from department management first.");
