@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import com.example.employee.entity.Employee;
+import com.example.employee.entity.UserRole;
 
 @Repository
 public interface EmployeeRepo extends JpaRepository<Employee, UUID> {
@@ -34,4 +35,8 @@ public interface EmployeeRepo extends JpaRepository<Employee, UUID> {
   boolean existsByEmail(String email);
 
   boolean existsByPhoneNumber(String phoneNumber);
+
+  int countByDepartmentId(UUID departmentId);
+
+  List<Employee> findByRole(UserRole role);
 }

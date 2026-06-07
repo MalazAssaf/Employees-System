@@ -61,8 +61,8 @@ public class EmployeeService {
     DepartmentResponse departmentResponse = new DepartmentResponse(
         employee.getDepartment().getId(),
         employee.getDepartment().getName(),
-        managerSummary // null if employee is their own manager
-    );
+        managerSummary, // null if employee is their own manager,
+        employeeRepo.countByDepartmentId(employee.getDepartment().getId()));
 
     return new EmployeeResponse(
         employee.getId(),
