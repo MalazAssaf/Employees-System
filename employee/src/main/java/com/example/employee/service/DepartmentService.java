@@ -13,9 +13,12 @@ import com.example.employee.dtos.response.DepartmentResponse;
 import com.example.employee.dtos.response.EmployeeSummaryResponse;
 import com.example.employee.entity.Department;
 import com.example.employee.entity.Employee;
+import com.example.employee.entity.UserRole;
+import com.example.employee.filter.DepartmentFilter;
 import com.example.employee.repo.DepartmentRepo;
 import com.example.employee.repo.EmployeeRepo;
 import com.example.employee.shared.CustomResponseException;
+import com.example.employee.specification.DepartmentSpecification;
 import com.example.employee.utils.PaginationUtil;
 
 import lombok.RequiredArgsConstructor;
@@ -25,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 public class DepartmentService {
   private final DepartmentRepo departmentRepo;
   private final EmployeeRepo employeeRepo;
+  private final DepartmentSpecification departmentSpecification;
 
   private DepartmentResponse toDto(Department department) {
 
@@ -34,7 +38,8 @@ public class DepartmentService {
         ? null
         : new EmployeeSummaryResponse(mgr.getId(), mgr.getName());
 
-    return new DepartmentResponse(department.getId(), department.getName(), manager);
+    return new DepartmentResponse(department.getId(), department.getName(), manager,
+        employeeRepo.countByDepartmentId(department.getId()));
   }
 
   public DepartmentResponse getById(UUID id) {
@@ -44,11 +49,11 @@ public class DepartmentService {
     return toDto(department);
   }
 
-  public Page<DepartmentResponse> getAll(int page, int size) {
+  public Page<DepartmentResponse> getAll(DepartmentFilter filter, int page, int size) {
 
     Pageable pageable = PaginationUtil.createPageable(page, size);
 
-    return departmentRepo.findAll(pageable).map(this::toDto);
+    return departmentRepo.findAll(departmentSpecification.apply(filter), pageable).map(this::toDto);
   }
 
   @Transactional
@@ -60,15 +65,13 @@ public class DepartmentService {
     Employee manager = employeeRepo.findById(req.managerId()).orElseThrow(
         () -> CustomResponseException.resourceNotFoundException("Manager with" + req.managerId() + " Not found!"));
 
+    if (!manager.getRole().equals(UserRole.MANAGER)) {
+      throw CustomResponseException.badRequestException("Employee Role must be Manager!");
+    }
+
     if (manager.getDepartment() == null || !manager.getDepartment().getId().equals(departmentId)) {
       throw CustomResponseException.badRequestException("Employee must belong to this department first!");
     }
-
-    // if (!employeeRepo.existsByManagerId(manager.getId())) {
-    // throw CustomResponseException
-    // .badRequestException("This employee does not manage any team members. They
-    // cannot head a department!");
-    // }
 
     if (departmentRepo.existsByManagerId(manager.getId())
         && (department.getManager() == null || !department.getManager().getId().equals(manager.getId()))) {
@@ -76,6 +79,7 @@ public class DepartmentService {
     }
 
     department.setManager(manager);
+    departmentRepo.save(department);
 
     return "Successfully assigned " + manager.getName() + " as the manager of " + department.getName();
   }
@@ -95,9 +99,9 @@ public class DepartmentService {
       throw CustomResponseException.resourceNotFoundException("Department with " + id + " Not found!");
     }
 
-    if (employeeRepo.existsByDepartmentId(id)) {
+    if (employeeRepo.countByDepartmentId(id) > 0) {
       throw CustomResponseException
-          .badRequestException("Cannot Delete the department since employees are registered on it!");
+          .badRequestException("Cannot Delete the department there are employees under it!");
     }
     departmentRepo.deleteById(id);
 
