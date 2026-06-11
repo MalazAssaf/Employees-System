@@ -26,4 +26,8 @@ public class CustomResponseException extends RuntimeException {
   public static CustomResponseException forbiddenException(String message) {
     return new CustomResponseException(HttpStatus.FORBIDDEN, message);
   }
+
+  public static CustomResponseException conflictException(String message) {
+    return new CustomResponseException(HttpStatus.CONFLICT, message);
+  }
 }
