@@ -11,6 +11,7 @@ import com.example.employee.dtos.response.DepartmentResponse;
 import com.example.employee.dtos.response.DepartmentWithEmployeesResponse;
 import com.example.employee.dtos.response.EmployeeSummaryResponse;
 import com.example.employee.dtos.response.PaginatedResponse;
+import com.example.employee.filter.DepartmentFilter;
 import com.example.employee.service.DepartmentService;
 import com.example.employee.shared.GlobalResponse;
 import com.example.employee.utils.PaginationUtil;
@@ -25,6 +26,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -46,7 +48,9 @@ public class DepartmentController {
 
   @PreAuthorize("hasAuthority('ADMIN')")
   @GetMapping()
-  public GlobalResponse<PaginatedResponse<DepartmentResponse>> getAll(@RequestParam(defaultValue = "1") int page,
+  public GlobalResponse<PaginatedResponse<DepartmentResponse>> getAll(
+      @ModelAttribute DepartmentFilter filter,
+      @RequestParam(defaultValue = "1") int page,
       @RequestParam(defaultValue = "3") int size, HttpServletRequest request) {
 
     String baseUrl = ServletUriComponentsBuilder
@@ -55,7 +59,7 @@ public class DepartmentController {
         .build()
         .toUriString();
 
-    Page<DepartmentResponse> departments = service.getAll(page, size);
+    Page<DepartmentResponse> departments = service.getAll(filter, page, size);
 
     PaginatedResponse<DepartmentResponse> paginatedResponse = PaginationUtil.buildResponse(departments, page, size,
         baseUrl);

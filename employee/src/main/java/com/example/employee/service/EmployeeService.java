@@ -21,12 +21,14 @@ import com.example.employee.entity.ActivationToken;
 import com.example.employee.entity.Department;
 import com.example.employee.entity.Employee;
 import com.example.employee.event.EmployeeCreatedEvent;
+import com.example.employee.filter.EmployeeFilter;
 import com.example.employee.repo.ActivationTokenRepo;
 import com.example.employee.repo.DepartmentRepo;
 import com.example.employee.repo.EmployeeRepo;
 import com.example.employee.repo.LeaveRequestRepo;
 import com.example.employee.repo.UserRepo;
 import com.example.employee.shared.CustomResponseException;
+import com.example.employee.specification.EmployeeSpecification;
 import com.example.employee.utils.PaginationUtil;
 
 import lombok.RequiredArgsConstructor;
@@ -41,6 +43,7 @@ public class EmployeeService {
   private final ActivationTokenRepo activationTokenRepo;
   private final UserRepo userRepo;
   private final ApplicationEventPublisher eventPublisher;
+  private final EmployeeSpecification employeeSpecification;
 
   @Value("${application.security.jwt.expiration}")
   private long jwtExpiration;
@@ -81,10 +84,10 @@ public class EmployeeService {
     return toDto(employee);
   }
 
-  public Page<EmployeeResponse> getAll(int page, int size) {
+  public Page<EmployeeResponse> getAll(EmployeeFilter filter, int page, int size) {
     Pageable pageable = PaginationUtil.createPageable(page, size);
 
-    return employeeRepo.findAll(pageable)
+    return employeeRepo.findAll(employeeSpecification.apply(filter), pageable)
         .map(this::toDto);
   }
 

@@ -12,6 +12,7 @@ import com.example.employee.dtos.response.EmployeeSummaryResponse;
 import com.example.employee.dtos.response.EmployeeUnderManagerResponse;
 import com.example.employee.dtos.response.ManagerResponse;
 import com.example.employee.dtos.response.PaginatedResponse;
+import com.example.employee.filter.EmployeeFilter;
 import com.example.employee.service.EmployeeService;
 import com.example.employee.shared.GlobalResponse;
 import com.example.employee.utils.PaginationUtil;
@@ -28,6 +29,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 
@@ -46,6 +48,7 @@ public class EmployeeController {
   @GetMapping()
   @PreAuthorize("hasAuthority('ADMIN')")
   public GlobalResponse<PaginatedResponse<EmployeeResponse>> getAll(
+      @ModelAttribute EmployeeFilter filter,
       @RequestParam(defaultValue = "1") int page,
       @RequestParam(defaultValue = "3") int size,
       HttpServletRequest request) {
@@ -56,7 +59,7 @@ public class EmployeeController {
         .build()
         .toUriString();
 
-    Page<EmployeeResponse> employees = service.getAll(page, size);
+    Page<EmployeeResponse> employees = service.getAll(filter, page, size);
 
     PaginatedResponse<EmployeeResponse> paginatedResponse = PaginationUtil.buildResponse(employees, page, size,
         baseUrl);
